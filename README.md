@@ -1,6 +1,6 @@
 # 全网小说下载器 + 阅读器
 
-[简体中文](#简体中文) · [English](#english)
+[English](README.en.md)
 
 ## 简体中文
 
@@ -79,41 +79,3 @@ build/icon-source.jpg           用户指定的应用图标源图
 
 本工具仅用于个人学习、研究，以及备份自己有权访问的公开内容。请遵守目标网站服务条款和相关法律法规，尊重作者版权，支持正版；请勿用于商业用途或大规模批量抓取。
 
-## English
-
-Web Novel Downloader + Reader is a Windows Electron desktop app that searches novel titles across the web, loads public chapter indexes, downloads accessible chapters as UTF-8 TXT, and reads them locally.
-
-### Features
-
-- Search by full title across multiple novel websites.
-- Load HTTP/HTTPS results and attempt to detect public chapter indexes.
-- Generic parser for chapter links and article text, with chapter ranges, rate limiting, failed-chapter placeholders, and TXT export.
-- Dedicated Fanqie adapter for public book/reading pages and text decoding.
-- Does not bypass login, payment, CAPTCHA, or access controls.
-- Built-in reader with table of contents, themes, progress, typography controls, and natural full-width layout.
-- Persistent bookshelf for opened TXT/Markdown files; remove a shelf record without deleting the local file.
-- Incremental updates preserve existing chapters and append only newly discovered chapters.
-- Re-downloading the same book automatically deduplicates by stable chapter ID or URL.
-
-### Download and build
-
-Windows x64 2.1.5 packages are built in `release/`:
-
-- `全网小说下载器 Setup 2.1.5.exe` — installer.
-- `全网小说下载器 2.1.5.exe` — portable edition.
-
-```powershell
-npm start
-npm run dist
-```
-
-### Usage
-
-1. Enter a complete title and click “搜索网络” (Search the web).
-2. Load a result or paste a book index URL.
-3. Choose an output directory and chapter range, then start downloading.
-4. Open the TXT in the reader; use “更新” to append new chapters and “书架” to manage opened books.
-
-### Compliance
-
-For personal learning, research, and backup of content you are authorized to access only. Follow each website’s terms and applicable laws, respect copyright, and do not use this project for commercial or large-scale scraping.
