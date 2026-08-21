@@ -1,5 +1,7 @@
 # 发布文件
 
+语言 / Language: [简体中文](README.md) · [English](README.en.md)
+
 当前稳定版本：**2.1.1**
 
 安装版和便携版 EXE 请从 GitHub Releases 下载：

@@ -1,5 +1,7 @@
 # 全网小说下载器 + 阅读器
 
+语言 / Language: [简体中文](README.md) · [English](README.en.md)
+
 一个 Windows Electron 桌面应用：按书名搜索全网小说结果，载入书籍目录页，下载公开可见章节为 UTF-8 TXT，并用内置阅读器阅读。
 
 ## 功能
