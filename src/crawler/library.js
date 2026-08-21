@@ -32,6 +32,7 @@ function createLibraryMeta(filePath, sourceUrl, book, chapters) {
     version: 1,
     filePath,
     sourceUrl,
+    bookId: String(book.bookId || ''),
     bookName: book.bookName || '',
     lastVolume: chapters.length ? (chapters[chapters.length - 1].volume || '') : '',
     chapters: chapters.map(chapterRecord).filter((chapter) => chapter.key),
@@ -65,7 +66,13 @@ function appendTxtChapters(filePath, chapters, lastVolume = '') {
 
 function mergeNewChapters(meta, chapters) {
   const seen = new Set((meta.chapters || []).map((chapter) => chapter.key).filter(Boolean));
-  const records = chapters.map(chapterRecord).filter((chapter) => chapter.key && !seen.has(chapter.key));
+  const records = [];
+  for (const source of chapters) {
+    const chapter = chapterRecord(source);
+    if (!chapter.key || seen.has(chapter.key)) continue;
+    seen.add(chapter.key);
+    records.push(chapter);
+  }
   return {
     ...meta,
     chapters: [...(meta.chapters || []), ...records],

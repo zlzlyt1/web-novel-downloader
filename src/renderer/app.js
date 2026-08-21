@@ -255,10 +255,13 @@ async function startDownload() {
   const okIcon = '<svg class="r-icon ok" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>';
   const errIcon = '<svg class="r-icon err" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>';
   if (res.ok) {
-    setProgress(100, '下载完成');
+    setProgress(100, res.skippedDuplicate ? '已是最新章节' : '下载完成');
     resultEl.classList.remove('err');
+    const summary = res.skippedDuplicate
+      ? `《${res.book.bookName}》已存在且已是最新，未重复下载`
+      : `${res.appended ? '已追加新章节：' : '下载完成：'}《${res.book.bookName}》共 ${res.chapterCount} 章${res.failedCount ? `，失败 ${res.failedCount} 章` : ''}${res.residual ? `，残留未解密字符 ${res.residual} 个` : ''}`;
     resultEl.innerHTML = `
-      <div>${okIcon} 下载完成：《${res.book.bookName}》共 ${res.chapterCount} 章${res.failedCount ? `，失败 ${res.failedCount} 章` : ''}${res.residual ? `，残留未解密字符 ${res.residual} 个` : ''}</div>
+      <div>${okIcon} ${summary}</div>
       <div class="path">${res.filePath}</div>
       <div class="actions">
         <button class="btn primary" id="btnRead">打开阅读</button>

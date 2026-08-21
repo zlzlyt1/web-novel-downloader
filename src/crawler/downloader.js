@@ -78,7 +78,9 @@ class Downloader {
     const seen = new Set(Array.from(existingKeys, (key) => String(key || '').trim()).filter(Boolean));
     const metas = book.chapters.filter((chapter) => {
       const key = chapterKey(chapter);
-      return key && !seen.has(key);
+      if (!key || seen.has(key)) return false;
+      seen.add(key); // 目录自身出现重复链接时，也只下载一次。
+      return true;
     });
     this._report({
       stage: 'book',

@@ -19,7 +19,7 @@ try {
   assert.match(text, /新正文/);
   assert.strictEqual(next.chapters.length, 2);
   assert.strictEqual(next.chapters[1].key, 'new-2');
-  assert.strictEqual(mergeNewChapters(next, [newChapter]).chapters.length, 2);
+  assert.strictEqual(mergeNewChapters(next, [newChapter, newChapter]).chapters.length, 2);
   console.log('library update test passed');
 } finally {
   fs.rmSync(dir, { recursive: true, force: true });

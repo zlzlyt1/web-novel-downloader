@@ -3,7 +3,7 @@ const { app, BrowserWindow, ipcMain, dialog, shell, Menu, nativeTheme } = requir
 const path = require('path');
 const fs = require('fs');
 const { Downloader, getBookFromUrl } = require('./src/crawler/downloader');
-const { saveTxt } = require('./src/crawler/txt');
+const { saveTxt, safeFileName } = require('./src/crawler/txt');
 const { loadLibraryMeta, saveLibraryMeta, createLibraryMeta, appendTxtChapters, mergeNewChapters } = require('./src/crawler/library');
 const { searchBooks } = require('./src/search/web-search');
 
@@ -58,6 +58,47 @@ function applyThemeToWindows(theme) {
 
 function defaultOutDir() {
   return path.join(app.getPath('documents'), '全网小说');
+}
+
+function normalizeSourceUrl(rawUrl) {
+  try {
+    const url = new URL(String(rawUrl || ''));
+    url.hash = '';
+    url.pathname = url.pathname.replace(/\/+$/, '') || '/';
+    return url.toString();
+  } catch (_) { return String(rawUrl || '').trim(); }
+}
+
+function isSameStoredBook(meta, sourceUrl, book) {
+  if (!meta) return false;
+  if (meta.bookId && book?.bookId && String(meta.bookId) === String(book.bookId)) return true;
+  return normalizeSourceUrl(meta.sourceUrl) === normalizeSourceUrl(sourceUrl);
+}
+
+function availableTxtPath(outDir, bookName) {
+  const base = safeFileName(bookName);
+  let n = 1;
+  let filePath = path.join(outDir, `${base}.txt`);
+  while (fs.existsSync(filePath)) filePath = path.join(outDir, `${base} (${++n}).txt`);
+  return filePath;
+}
+
+function findStoredBookFile(outDir, sourceUrl, book) {
+  const defaultPath = path.join(outDir, `${safeFileName(book.bookName)}.txt`);
+  if (fs.existsSync(defaultPath)) {
+    const meta = loadLibraryMeta(defaultPath);
+    if (isSameStoredBook(meta, sourceUrl, book)) return { filePath: defaultPath, meta };
+  }
+  try {
+    for (const name of fs.readdirSync(outDir)) {
+      if (!name.endsWith('.txt.novel-meta.json')) continue;
+      const filePath = path.join(outDir, name.slice(0, -'.novel-meta.json'.length));
+      if (!fs.existsSync(filePath)) continue;
+      const meta = loadLibraryMeta(filePath);
+      if (isSameStoredBook(meta, sourceUrl, book)) return { filePath, meta };
+    }
+  } catch (_) {}
+  return null;
 }
 
 // 用户设置（正文源等）持久化到 userData/settings.json。
@@ -219,6 +260,7 @@ ipcMain.handle('search:books', async (event, query) => {
 ipcMain.handle('crawl:start', async (event, { url, outDir, startChapter, endChapter, maxChapters }) => {
   cancelFlag = false;
   const settings = getSettings();
+  const outputDir = outDir || defaultOutDir();
   activeDownloader = new Downloader({
     minInterval: 700,
     startChapter: startChapter || 1,
@@ -233,8 +275,31 @@ ipcMain.handle('crawl:start', async (event, { url, outDir, startChapter, endChap
     isCancelled: () => cancelFlag,
   });
   try {
+    // 预先读取目录，定位该书的已有 TXT。匹配时走增量下载，避免重复抓取与覆盖。
+    const { HttpClient } = require('./src/crawler/http');
+    const indexedBook = await getBookFromUrl(url, new HttpClient({ cacheDir: path.join(app.getPath('userData'), 'cache') }));
+    const defaultPath = path.join(outputDir, `${safeFileName(indexedBook.bookName)}.txt`);
+    const stored = findStoredBookFile(outputDir, url, indexedBook);
+    if (stored) {
+      const { filePath, meta: storedMeta } = stored;
+      const existingKeys = (storedMeta.chapters || []).map((chapter) => chapter.key).filter(Boolean);
+      const { book, chapters, failed } = await activeDownloader.downloadNew(url, existingKeys);
+      if (!chapters.length) {
+        return { ok: true, book, chapterCount: 0, failedCount: 0, residual: 0, filePath, skippedDuplicate: true };
+      }
+      const lastVolume = appendTxtChapters(filePath, chapters, storedMeta.lastVolume || '');
+      const nextMeta = mergeNewChapters(storedMeta, chapters);
+      nextMeta.bookName = book.bookName || storedMeta.bookName || '';
+      nextMeta.bookId = String(book.bookId || storedMeta.bookId || '');
+      nextMeta.lastVolume = lastVolume;
+      saveLibraryMeta(filePath, nextMeta);
+      const residual = chapters.reduce((n, c) => n + (c.residual || 0), 0);
+      return { ok: true, book, chapterCount: chapters.length, failedCount: failed.length, residual, filePath, appended: true };
+    }
     const { book, chapters, failed } = await activeDownloader.download(url);
-    const filePath = saveTxt(book, chapters, outDir || defaultOutDir());
+    // 同名但来源不同或旧文件无来源记录时，使用新文件名，绝不覆盖原书。
+    const filePath = fs.existsSync(defaultPath) ? availableTxtPath(outputDir, book.bookName) : saveTxt(book, chapters, outputDir);
+    if (filePath !== defaultPath) saveTxt(book, chapters, outputDir, path.basename(filePath));
     saveLibraryMeta(filePath, createLibraryMeta(filePath, url, book, chapters));
     const residual = chapters.reduce((n, c) => n + (c.residual || 0), 0);
     return { ok: true, book, chapterCount: chapters.length, failedCount: failed.length, residual, filePath };
