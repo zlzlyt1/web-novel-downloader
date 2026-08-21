@@ -66,6 +66,20 @@ body[data-theme="dark"] {
 .toc li.active { background: var(--accent); color: #fff; }
 .toc li.volume { color: var(--muted); font-weight: 600; cursor: default; margin-top: 6px; }
 .toc li.volume:hover { background: transparent; }
+.shelf-item { display: flex; align-items: stretch; gap: 4px; padding: 4px; }
+.shelf-open {
+  flex: 1; min-width: 0; border: 0; border-radius: 6px; padding: 8px; background: transparent;
+  color: var(--text); text-align: left; cursor: pointer;
+}
+.shelf-open:hover { background: var(--border); }
+.shelf-name { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13.5px; }
+.shelf-meta { display: block; margin-top: 3px; color: var(--muted); font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.shelf-remove {
+  align-self: center; width: 28px; height: 28px; border: 0; border-radius: 6px; background: transparent;
+  color: var(--muted); font-size: 18px; cursor: pointer;
+}
+.shelf-remove:hover { background: var(--border); color: var(--accent); }
+.shelf-empty { padding: 24px 12px; color: var(--muted); text-align: center; font-size: 13px; }
 
 .overlay { position: fixed; inset: var(--topbar-h) 0 0 0; background: rgba(0,0,0,.35); z-index: 10; opacity: 0; pointer-events: none; transition: opacity .2s; }
 .overlay.show { opacity: 1; pointer-events: auto; }

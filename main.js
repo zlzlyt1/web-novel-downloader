@@ -16,6 +16,7 @@ let readerWindow = null;
 let activeDownloader = null;
 let cancelFlag = false;
 let currentReaderFile = null;
+let readerBooks = [];
 let currentTheme = 'light'; // 'light' | 'dark'
 
 // 阅读器状态持久化（记住上次打开的书籍），跨启动保存到 userData。
@@ -26,13 +27,31 @@ function loadReaderState() {
   try {
     const data = JSON.parse(fs.readFileSync(readerStateFile(), 'utf8'));
     currentReaderFile = data.lastFile || null;
-  } catch (_) { currentReaderFile = null; }
+    readerBooks = Array.isArray(data.books) ? data.books.filter((book) => book && typeof book.filePath === 'string') : [];
+  } catch (_) { currentReaderFile = null; readerBooks = []; }
 }
 function saveReaderState() {
   try {
     fs.mkdirSync(path.dirname(readerStateFile()), { recursive: true });
-    fs.writeFileSync(readerStateFile(), JSON.stringify({ lastFile: currentReaderFile }));
+    fs.writeFileSync(readerStateFile(), JSON.stringify({ lastFile: currentReaderFile, books: readerBooks }, null, 2));
   } catch (_) {}
+}
+
+function touchReaderBook({ filePath, title, chapterCount } = {}) {
+  if (!filePath || typeof filePath !== 'string') return false;
+  const existing = readerBooks.find((book) => book.filePath === filePath);
+  const safeTitle = String(title || path.basename(filePath)).trim().slice(0, 160) || path.basename(filePath);
+  const safeCount = Number.isFinite(Number(chapterCount)) ? Math.max(0, Math.floor(Number(chapterCount))) : 0;
+  const next = {
+    filePath,
+    title: safeTitle,
+    chapterCount: safeCount,
+    lastOpened: new Date().toISOString(),
+  };
+  readerBooks = [next, ...readerBooks.filter((book) => book.filePath !== filePath)].slice(0, 200);
+  currentReaderFile = filePath;
+  saveReaderState();
+  return true;
 }
 
 // 标题栏（窗口控制按钮区域）颜色，随主题切换。
@@ -362,6 +381,22 @@ ipcMain.handle('reader:setFile', (event, filePath) => {
   currentReaderFile = filePath;
   saveReaderState();
   return true;
+});
+
+ipcMain.handle('reader:touchBook', (event, book) => ({ ok: touchReaderBook(book) }));
+
+ipcMain.handle('reader:listBooks', () => ({
+  ok: true,
+  books: readerBooks.map((book) => ({ ...book, missing: !fs.existsSync(book.filePath) })),
+}));
+
+// 仅从书架移除记录，不删除用户的 TXT / Markdown 文件。
+ipcMain.handle('reader:removeBook', (event, filePath) => {
+  const before = readerBooks.length;
+  readerBooks = readerBooks.filter((book) => book.filePath !== filePath);
+  if (currentReaderFile === filePath) currentReaderFile = null;
+  if (readerBooks.length !== before) saveReaderState();
+  return { ok: true };
 });
 
 // 阅读器增量更新：读取下载时保存的来源与章节标识，只追加目录中新增的章节。

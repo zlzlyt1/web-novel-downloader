@@ -5,6 +5,7 @@ let book = { title: '', chapters: [] };
 let currentChapter = -1;
 let currentFile = null;
 let isMarkdown = false;
+let sidebarMode = 'toc';
 
 const THEMES = ['light', 'sepia', 'dark'];
 const PARAGRAPH_MODES = ['off', 'balanced', 'fill'];
@@ -106,6 +107,8 @@ function parseTxt(content) {
 }
 
 function renderToc() {
+  sidebarMode = 'toc';
+  $('sidebarTitle').textContent = book.title ? `目录 · ${book.title}` : '目录';
   const ul = $('toc');
   ul.innerHTML = '';
   book.chapters.forEach((ch, i) => {
@@ -121,6 +124,52 @@ function renderToc() {
     if (i === currentChapter) li.className = 'active';
     ul.appendChild(li);
   });
+}
+
+async function renderShelf() {
+  sidebarMode = 'shelf';
+  $('sidebarTitle').textContent = '书架';
+  const ul = $('toc');
+  ul.innerHTML = '<li class="shelf-empty">正在读取书架…</li>';
+  const response = await window.api.getReaderBooks();
+  if (sidebarMode !== 'shelf') return;
+  ul.innerHTML = '';
+  const books = response.ok ? response.books : [];
+  if (!books.length) {
+    ul.innerHTML = '<li class="shelf-empty">书架还没有书籍<br>打开 TXT 或 Markdown 后会自动加入</li>';
+    return;
+  }
+  for (const item of books) {
+    const li = document.createElement('li');
+    li.className = 'shelf-item';
+    const open = document.createElement('button');
+    open.className = 'shelf-open';
+    open.disabled = item.missing;
+    open.title = item.missing ? '文件已不存在' : item.filePath;
+    const name = document.createElement('span');
+    name.className = 'shelf-name';
+    name.textContent = item.title || '未命名';
+    const meta = document.createElement('span');
+    meta.className = 'shelf-meta';
+    meta.textContent = item.missing ? '文件已不存在' : `${item.chapterCount || 0} 章 · ${item.filePath}`;
+    open.append(name, meta);
+    open.onclick = async () => {
+      if (item.missing) return;
+      await loadFile(item.filePath);
+      closeToc();
+    };
+    const remove = document.createElement('button');
+    remove.className = 'shelf-remove';
+    remove.textContent = '×';
+    remove.title = '仅移出书架，不删除本地文件';
+    remove.onclick = async (event) => {
+      event.stopPropagation();
+      await window.api.removeReaderBook(item.filePath);
+      renderShelf();
+    };
+    li.append(open, remove);
+    ul.appendChild(li);
+  }
 }
 
 function renderChapter(i) {
@@ -149,11 +198,13 @@ function renderChapter(i) {
   $('btnPrev').disabled = i <= 0;
   $('btnNext').disabled = i >= book.chapters.length - 1;
   // 高亮目录
-  document.querySelectorAll('#toc li').forEach((li) => li.classList.remove('active'));
-  const items = document.querySelectorAll('#toc li:not(.volume)');
-  if (items[i]) items[i].classList.add('active');
+  if (sidebarMode === 'toc') {
+    document.querySelectorAll('#toc li').forEach((li) => li.classList.remove('active'));
+    const items = document.querySelectorAll('#toc li:not(.volume)');
+    if (items[i]) items[i].classList.add('active');
+  }
   // 滚动目录到当前
-  const active = document.querySelector('#toc li.active');
+  const active = sidebarMode === 'toc' ? document.querySelector('#toc li.active') : null;
   if (active && active.scrollIntoView) active.scrollIntoView({ block: 'nearest' });
   // 回到顶部
   $('content').scrollTop = 0;
@@ -172,6 +223,17 @@ function escapeHtml(s) {
 function openToc() {
   $('sidebar').classList.add('open');
   $('overlay').classList.add('show');
+}
+
+function toggleToc() {
+  if ($('sidebar').classList.contains('open') && sidebarMode === 'toc') return closeToc();
+  renderToc();
+  openToc();
+}
+
+function openShelf() {
+  renderShelf();
+  openToc();
 }
 function closeToc() {
   $('sidebar').classList.remove('open');
@@ -280,12 +342,11 @@ async function loadFile(filePath, silent = false) {
   isMarkdown = /\.(md|markdown)$/i.test(res.path);
   book = parseTxt(res.content);
   $('topTitle').textContent = book.title;
-  $('sidebarTitle').textContent = book.title;
   renderToc();
   const saved = loadProgress();
   const start = (typeof saved.chapter === 'number' && saved.chapter < book.chapters.length) ? saved.chapter : 0;
   renderChapter(start);
-  window.api.setReaderFile(filePath);
+  await window.api.touchReaderBook({ filePath: res.path, title: book.title, chapterCount: book.chapters.length });
   $('btnUpdate').disabled = isMarkdown;
   $('btnUpdate').title = isMarkdown ? 'Markdown 文件不支持章节更新' : '检查并仅下载新章节';
 }
@@ -319,7 +380,8 @@ async function updateBook() {
 window.addEventListener('DOMContentLoaded', async () => {
   applySettings(getSettings());
 
-  $('btnToc').addEventListener('click', () => { $('sidebar').classList.contains('open') ? closeToc() : openToc(); });
+  $('btnToc').addEventListener('click', toggleToc);
+  $('btnShelf').addEventListener('click', openShelf);
   $('overlay').addEventListener('click', closeToc);
   $('btnPrev').addEventListener('click', () => gotoChapter(currentChapter - 1));
   $('btnNext').addEventListener('click', () => gotoChapter(currentChapter + 1));

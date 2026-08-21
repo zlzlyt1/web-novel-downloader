@@ -35,6 +35,9 @@ contextBridge.exposeInMainWorld('api', {
   openReader: (filePath) => ipcRenderer.invoke('reader:open', filePath),
   getReaderFile: () => ipcRenderer.invoke('reader:getFile'),
   setReaderFile: (p) => ipcRenderer.invoke('reader:setFile', p),
+  touchReaderBook: (book) => ipcRenderer.invoke('reader:touchBook', book),
+  getReaderBooks: () => ipcRenderer.invoke('reader:listBooks'),
+  removeReaderBook: (filePath) => ipcRenderer.invoke('reader:removeBook', filePath),
   updateReaderBook: (payload) => ipcRenderer.invoke('reader:update', payload),
   onReaderUpdateProgress: (cb) => {
     const listener = (_e, data) => cb(data);
