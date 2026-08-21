@@ -1,0 +1,14 @@
+Web Novel Downloader 2.1.1 (Windows x64)
+
+Files
+1. 全网小说下载器 Setup 2.1.1.exe
+   Installer. Choose an installation directory and create desktop/Start Menu shortcuts.
+
+2. 全网小说下载器 2.1.1.exe
+   Portable edition. No installation is required; double-click to run.
+
+Verification
+Use SHA256SUMS.txt in this folder to verify downloaded files.
+
+Security note
+The binaries are not signed with a commercial code-signing certificate. Windows may display “Unknown publisher”.
