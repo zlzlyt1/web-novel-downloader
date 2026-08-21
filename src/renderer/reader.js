@@ -262,7 +262,9 @@ function applySettings(s) {
   document.documentElement.style.setProperty('--line-height', String(s.lineHeight ?? 1.9));
   document.documentElement.style.setProperty('--para-margin', (s.paraSpacing ?? 1) + 'em');
   document.documentElement.style.setProperty('--page-margin', (s.pageMargin ?? 24) + 'px');
-  refreshTypePanel();
+  // 直接使用本次修改后的对象刷新数值；此时 localStorage 可能尚未写入，
+  // 若重新读取缓存会让面板滞后一拍，并在下一项操作时显示成“改错了项目”。
+  refreshTypePanel(s);
   // 同步阅读器标题栏颜色与背景，与下载器一致的窗口样式
   window.api.setReaderTheme(theme);
 }
@@ -318,8 +320,8 @@ function cycleParagraphMode() {
   if (!isMarkdown && currentChapter >= 0) renderChapter(currentChapter);
 }
 
-function refreshTypePanel() {
-  const s = getSettings();
+function refreshTypePanel(settings) {
+  const s = settings || getSettings();
   $('tpFontVal').textContent = s.fontSize ?? 18;
   $('tpLineVal').textContent = (s.lineHeight ?? 1.9).toFixed(1);
   $('tpParaVal').textContent = (s.paraSpacing ?? 1).toFixed(1);

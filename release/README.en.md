@@ -2,7 +2,7 @@
 
 Language: [简体中文](README.md) · [English](README.en.md)
 
-Current stable version: **2.1.6**
+Current stable version: **2.1.7**
 
 Download the Windows x64 installer and portable executable from [GitHub Releases](https://github.com/zlzlyt1/web-novel-downloader/releases).
 
@@ -10,8 +10,13 @@ The repository keeps installation instructions and SHA-256 checksums. See the ro
 
 ## Included packages
 
-- `全网小说下载器 Setup 2.1.6.exe` — installer with desktop and Start Menu shortcuts.
-- `全网小说下载器 2.1.6.exe` — portable edition; no installation required.
+- `全网小说下载器 Setup 2.1.7.exe` — installer with desktop and Start Menu shortcuts.
+- `全网小说下载器 2.1.7.exe` — portable edition; no installation required.
+
+## 2.1.7 typography control fix
+
+- Typography values now refresh from the setting changed by the current click.
+- Font size, line spacing, paragraph spacing, and page margin no longer appear one click late or under the wrong row.
 
 ## 2.1.6 desktop paragraph optimization
 
