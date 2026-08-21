@@ -84,6 +84,32 @@ body[data-theme="dark"] {
 .overlay { position: fixed; inset: var(--topbar-h) 0 0 0; background: rgba(0,0,0,.35); z-index: 10; opacity: 0; pointer-events: none; transition: opacity .2s; }
 .overlay.show { opacity: 1; pointer-events: auto; }
 
+/* 书架移除确认框：完全复用阅读器的主题变量，自动跟随浅色、羊皮纸和深色主题。 */
+.modal-backdrop {
+  position: fixed; inset: 0; z-index: 100;
+  display: grid; place-items: center; padding: 20px;
+  background: rgba(0, 0, 0, .55);
+}
+.modal-card {
+  width: min(460px, 100%); padding: 22px;
+  color: var(--text); background: var(--panel);
+  border: 1px solid var(--border); border-radius: 14px;
+  box-shadow: 0 18px 55px rgba(0, 0, 0, .32);
+}
+.modal-title { margin: 0 0 12px; font-size: 19px; line-height: 1.4; }
+.modal-message { margin: 0 0 10px; color: var(--text); font-size: 15px; line-height: 1.7; word-break: break-word; }
+.modal-detail { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.65; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 22px; flex-wrap: wrap; }
+.modal-btn {
+  min-height: 36px; padding: 7px 14px; border: 1px solid var(--border); border-radius: 8px;
+  color: var(--text); background: var(--bg); cursor: pointer; font: inherit;
+}
+.modal-btn:hover, .modal-btn:focus-visible { border-color: var(--accent); outline: none; }
+.modal-primary { color: #fff; background: var(--accent); border-color: var(--accent); }
+.modal-primary:hover, .modal-primary:focus-visible { filter: brightness(1.08); }
+.modal-danger { color: #fff; background: #c83f3f; border-color: #c83f3f; }
+.modal-danger:hover, .modal-danger:focus-visible { background: #df4949; border-color: #df4949; }
+
 .content { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 20px var(--page-margin, 24px) 36px; }
 .chapter-title { max-width: none; margin: 0 0 18px; font-size: 22px; font-weight: 600; text-align: center; word-break: break-word; }
 .chapter-body { max-width: none; width: 100%; margin: 0; font-size: var(--font-size, 18px); line-height: var(--line-height, 1.9); overflow-wrap: break-word; }
@@ -195,4 +221,6 @@ body[data-theme="dark"] {
   .top-title { font-size: 13px; }
   .sidebar { width: min(260px, 84vw); }
   .chapter-title { font-size: 19px; }
+  .modal-actions { flex-direction: column-reverse; }
+  .modal-btn { width: 100%; }
 }

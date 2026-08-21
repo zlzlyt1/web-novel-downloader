@@ -6,6 +6,7 @@ let currentChapter = -1;
 let currentFile = null;
 let isMarkdown = false;
 let sidebarMode = 'toc';
+let removeBookResolver = null;
 
 const THEMES = ['light', 'sepia', 'dark'];
 const PARAGRAPH_MODES = ['off', 'optimized'];
@@ -13,6 +14,29 @@ const PARAGRAPH_MODE_LABELS = { off: '关闭', optimized: '开启' };
 const VOLUME_RE = /^第\s*[0-9一二三四五六七八九十百千万零]+\s*[卷集]/;
 const CHAPTER_RE = /^第\s*[0-9一二三四五六七八九十百千万零]+\s*[章节回]/;
 const NUMBERED_CHAPTER_RE = /^\d{1,6}\s+\S/;
+
+function shelfDisplayTitle(item) {
+  const fallback = (item.filePath || '').split(/[\\/]/).pop()?.replace(/\.[^.]+$/, '') || '未命名';
+  const raw = String(item.title || fallback).trim();
+  const bracketed = raw.match(/^《([^》]+)》/);
+  return (bracketed?.[1] || raw.split(/作者\s*[：:]/)[0] || fallback).trim();
+}
+
+function chooseRemoveAction(item) {
+  $('removeBookMessage').textContent = `要如何处理《${shelfDisplayTitle(item)}》？`;
+  $('removeBookModal').classList.remove('hidden');
+  $('removeBookShelfOnly').focus();
+  return new Promise((resolve) => { removeBookResolver = resolve; });
+}
+
+function closeRemoveModal(action = null) {
+  const modal = $('removeBookModal');
+  if (modal.classList.contains('hidden')) return;
+  modal.classList.add('hidden');
+  const resolve = removeBookResolver;
+  removeBookResolver = null;
+  resolve?.(action);
+}
 
 // 将同一段落的多行合并成一行，避免文本被硬换行切碎成短段。
 // 中文之间不加空格，西文/数字之间补一个空格，保证英文单词不断开。
@@ -159,7 +183,7 @@ async function renderShelf() {
     open.title = item.missing ? '文件已不存在' : item.filePath;
     const name = document.createElement('span');
     name.className = 'shelf-name';
-    name.textContent = item.title || '未命名';
+    name.textContent = shelfDisplayTitle(item);
     const meta = document.createElement('span');
     meta.className = 'shelf-meta';
     meta.textContent = item.missing ? '文件已不存在' : `${item.chapterCount || 0} 章 · ${item.filePath}`;
@@ -172,10 +196,14 @@ async function renderShelf() {
     const remove = document.createElement('button');
     remove.className = 'shelf-remove';
     remove.textContent = '×';
-    remove.title = '仅移出书架，不删除本地文件';
+    remove.title = '移出书架或删除本地文件';
     remove.onclick = async (event) => {
       event.stopPropagation();
-      await window.api.removeReaderBook(item.filePath);
+      const action = await chooseRemoveAction(item);
+      if (!action) return;
+      const result = await window.api.removeReaderBook(item.filePath, action);
+      if (!result.ok) return alert('移除失败：' + (result.error || '未知错误'));
+      if (result.warning) alert(result.warning);
       renderShelf();
     };
     li.append(open, remove);
@@ -381,6 +409,12 @@ window.addEventListener('DOMContentLoaded', async () => {
   $('tpMarginDec').addEventListener('click', () => adjustMargin(-4));
   $('tpMarginInc').addEventListener('click', () => adjustMargin(4));
   $('tpParagraphMode').addEventListener('click', cycleParagraphMode);
+  $('removeBookCancel').addEventListener('click', () => closeRemoveModal());
+  $('removeBookShelfOnly').addEventListener('click', () => closeRemoveModal('shelf-only'));
+  $('removeBookDeleteLocal').addEventListener('click', () => closeRemoveModal('delete-local'));
+  $('removeBookModal').addEventListener('click', (event) => {
+    if (event.target === $('removeBookModal')) closeRemoveModal();
+  });
   document.addEventListener('click', (e) => {
     const panel = $('typePanel');
     if (!panel.classList.contains('hidden') && !panel.contains(e.target) && e.target.id !== 'btnType') {
@@ -393,6 +427,10 @@ window.addEventListener('DOMContentLoaded', async () => {
   });
   // 键盘翻页/翻章
   window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !$('removeBookModal').classList.contains('hidden')) {
+      closeRemoveModal();
+      return;
+    }
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
     if (e.key === 'ArrowLeft') gotoChapter(currentChapter - 1);
     if (e.key === 'ArrowRight') gotoChapter(currentChapter + 1);

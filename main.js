@@ -4,7 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const { Downloader, getBookFromUrl } = require('./src/crawler/downloader');
 const { saveTxt, safeFileName } = require('./src/crawler/txt');
-const { loadLibraryMeta, saveLibraryMeta, createLibraryMeta, appendTxtChapters, mergeNewChapters } = require('./src/crawler/library');
+const { metadataPath, loadLibraryMeta, saveLibraryMeta, createLibraryMeta, appendTxtChapters, mergeNewChapters } = require('./src/crawler/library');
 const { searchBooks } = require('./src/search/web-search');
 
 const APP_ID = 'com.zhangluyintao.web-novel-downloader';
@@ -420,13 +420,31 @@ ipcMain.handle('reader:listBooks', () => ({
   books: readerBooks.map((book) => ({ ...book, missing: !fs.existsSync(book.filePath) })),
 }));
 
-// 仅从书架移除记录，不删除用户的 TXT / Markdown 文件。
-ipcMain.handle('reader:removeBook', (event, filePath) => {
+// 阅读器内置主题弹窗负责选择；本地删除使用系统回收站，可恢复。
+ipcMain.handle('reader:removeBook', async (_event, filePath, action = 'shelf-only') => {
+  const shelfBook = readerBooks.find((book) => book.filePath === filePath);
+  if (!shelfBook) return { ok: false, error: '书架中找不到这本书' };
+  if (!['shelf-only', 'delete-local'].includes(action)) return { ok: false, error: '无效的移除方式' };
+
+  let metadataWarning = '';
+  if (action === 'delete-local') {
+    try {
+      if (fs.existsSync(filePath)) await shell.trashItem(filePath);
+    } catch (e) {
+      return { ok: false, error: `无法移入回收站：${e.message || String(e)}` };
+    }
+    const sidecarPath = metadataPath(filePath);
+    if (fs.existsSync(sidecarPath)) {
+      try { await shell.trashItem(sidecarPath); }
+      catch (e) { metadataWarning = `；更新记录未能移入回收站：${e.message || String(e)}`; }
+    }
+  }
+
   const before = readerBooks.length;
   readerBooks = readerBooks.filter((book) => book.filePath !== filePath);
   if (currentReaderFile === filePath) currentReaderFile = null;
   if (readerBooks.length !== before) saveReaderState();
-  return { ok: true };
+  return { ok: true, deletedLocal: action === 'delete-local', warning: metadataWarning };
 });
 
 // 下载器手动续传：用户指定目标章数，只追加该范围内尚未保存的章节。

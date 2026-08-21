@@ -57,6 +57,19 @@
 
     <div class="overlay" id="overlay"></div>
 
+    <div id="removeBookModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="removeBookTitle">
+      <section class="modal-card">
+        <h2 id="removeBookTitle" class="modal-title">移除书籍</h2>
+        <p id="removeBookMessage" class="modal-message"></p>
+        <p class="modal-detail">仅移出书架会保留小说文件；删除本地文件会将小说及更新记录移入 Windows 回收站，可以恢复。</p>
+        <div class="modal-actions">
+          <button id="removeBookCancel" class="modal-btn">取消</button>
+          <button id="removeBookShelfOnly" class="modal-btn modal-primary">仅移出书架</button>
+          <button id="removeBookDeleteLocal" class="modal-btn modal-danger">删除本地文件</button>
+        </div>
+      </section>
+    </div>
+
     <main class="content" id="content">
       <div class="chapter-title" id="chapterTitle">—</div>
       <div class="chapter-body" id="chapterBody">

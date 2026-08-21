@@ -19,10 +19,10 @@ A Windows Electron desktop app that searches novel titles across the web, loads 
 
 ## Download
 
-Windows x64 2.1.8 packages are built in `release/`:
+Windows x64 2.1.9 packages are built in `release/`:
 
-- `全网小说下载器 Setup 2.1.8.exe` — installer.
-- `全网小说下载器 2.1.8.exe` — portable edition.
+- `全网小说下载器 Setup 2.1.9.exe` — installer.
+- `全网小说下载器 2.1.9.exe` — portable edition.
 
 See [`release/README.md`](release/README.md) or [`release/README.en.md`](release/README.en.md) for release notes and verification files.
 
@@ -52,7 +52,7 @@ npm run optimize -- "E:\path\novel.txt"
 3. Choose the output directory and chapter range, then start the download.
 4. Read the exported file in the app or open its folder.
 5. In the downloader's downloaded-books list, manually increase the “更新到” target and click “追加”. Existing text stays unchanged and only unseen chapters in the requested range are appended. For an older TXT without source metadata, paste its index URL once when prompted.
-6. Click “书架” (Bookshelf) in the reader to manage opened books. Removing an item never deletes its local file.
+6. Click “书架” (Bookshelf) in the reader to manage opened books. When removing one, keep its files or move the novel and update record to the Recycle Bin.
 
 ## Compliance
 
