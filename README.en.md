@@ -14,15 +14,15 @@ A Windows Electron desktop app that searches novel titles across the web, loads 
 - Built-in reader with table of contents, font size, line height, paragraph spacing, themes, progress, and paragraph optimization that turns sentence-per-paragraph mobile exports into natural desktop-width paragraphs while preserving chapters, dialogue, and scene breaks.
 - Chapter updates live in the downloader's downloaded-books list: enter a larger target chapter number and append only unseen chapters in that range while preserving the existing TXT. Older files can be migrated by supplying the index URL once.
 - Re-downloading the same book automatically deduplicates and checks for updates. A book with the same title from another source is saved separately rather than overwritten.
-- A persistent bookshelf automatically collects opened TXT/Markdown files, shows chapter counts, and can remove a record without deleting the local file.
-- Open local TXT or Markdown files.
+- A persistent bookshelf collects opened EPUB/Markdown/TXT files. Removal can keep local files or move the book and update record to the Recycle Bin.
+- Browse local EPUB, Markdown, and TXT books, then convert between all three formats inside the reader.
 
 ## Download
 
-Windows x64 2.1.9 packages are built in `release/`:
+Windows x64 2.2.0 packages are built in `release/`:
 
-- `全网小说下载器 Setup 2.1.9.exe` — installer.
-- `全网小说下载器 2.1.9.exe` — portable edition.
+- `全网小说下载器 Setup 2.2.0.exe` — installer.
+- `全网小说下载器 2.2.0.exe` — portable edition.
 
 See [`release/README.md`](release/README.md) or [`release/README.en.md`](release/README.en.md) for release notes and verification files.
 

@@ -5,6 +5,7 @@ let book = { title: '', chapters: [] };
 let currentChapter = -1;
 let currentFile = null;
 let isMarkdown = false;
+let sourceFormat = 'txt';
 let sidebarMode = 'toc';
 let removeBookResolver = null;
 
@@ -36,6 +37,43 @@ function closeRemoveModal(action = null) {
   const resolve = removeBookResolver;
   removeBookResolver = null;
   resolve?.(action);
+}
+
+function setFormatButtonsDisabled(busy = false) {
+  document.querySelectorAll('.format-option').forEach((button) => {
+    button.disabled = busy || button.dataset.format === sourceFormat;
+  });
+}
+
+function openConvertModal() {
+  if (!currentFile) return;
+  const labels = { txt: 'TXT', md: 'Markdown', epub: 'EPUB' };
+  $('convertMessage').textContent = `《${book.title || '未命名'}》当前为 ${labels[sourceFormat] || sourceFormat}，请选择目标格式。`;
+  $('convertStatus').textContent = '转换会保留书名、章节和正文；图片与复杂样式会简化。';
+  setFormatButtonsDisabled(false);
+  $('convertModal').classList.remove('hidden');
+  document.querySelector('.format-option:not(:disabled)')?.focus();
+}
+
+function closeConvertModal() {
+  $('convertModal').classList.add('hidden');
+}
+
+async function convertCurrentBook(targetFormat) {
+  if (!currentFile || targetFormat === sourceFormat) return;
+  setFormatButtonsDisabled(true);
+  $('convertStatus').textContent = '正在准备转换内容…';
+  const result = await window.api.convertReaderBook({ book, sourceFormat, targetFormat, sourcePath: currentFile });
+  setFormatButtonsDisabled(false);
+  if (!result.ok) {
+    $('convertStatus').textContent = `转换失败：${result.error || '未知错误'}`;
+    return;
+  }
+  if (result.cancelled) {
+    $('convertStatus').textContent = '已取消转换。';
+    return;
+  }
+  $('convertStatus').textContent = `转换完成：${result.filePath}`;
 }
 
 // 将同一段落的多行合并成一行，避免文本被硬换行切碎成短段。
@@ -76,6 +114,7 @@ function parseTxt(content) {
   let cur = null;
   let curVolume = '';
   let preamble = [];
+  let markdownTitle = '';
   let pending = [];     // 当前累积的段落行
   let lastLine = '';    // 上一个非空行（判断上一句是否已完结 / 是否为续接）
   let lastWasBlank = true; // 是否刚遇到空行/标题/章节开始
@@ -103,10 +142,18 @@ function parseTxt(content) {
       flush(); cur = { title: line, volume: curVolume, paragraphs: [] };
       chapters.push(cur); lastLine = line; lastWasBlank = true; continue;
     }
-    // Markdown 标题形式的章节：如 “# 第一章 xxx”
-    if (isMarkdown && /^#{1,6}\s+第\s*[0-9一二三四五六七八九十百千万零]+\s*[章节回]/.test(line)) {
-      flush(); cur = { title: line.replace(/^#{1,6}\s+/, ''), volume: curVolume, paragraphs: [] };
-      chapters.push(cur); lastLine = line; lastWasBlank = true; continue;
+    // Markdown：首个一级标题视为书名，其余标题作为章节，支持非“第 X 章”命名。
+    const markdownHeading = isMarkdown ? line.match(/^(#{1,6})\s+(.+)$/) : null;
+    if (markdownHeading) {
+      flush();
+      const headingLevel = markdownHeading[1].length;
+      const headingText = markdownHeading[2].trim();
+      if (headingLevel === 1 && !markdownTitle && !chapters.length) markdownTitle = headingText;
+      else {
+        cur = { title: headingText, volume: curVolume, paragraphs: [] };
+        chapters.push(cur);
+      }
+      lastLine = line; lastWasBlank = true; continue;
     }
 
     const indented = /^[\s\u3000\t]/.test(raw);
@@ -137,7 +184,7 @@ function parseTxt(content) {
   }
 
   const metadataTitle = originalLines.map((line) => line.trim()).find((line) => /^书名\s*[：:]/.test(line));
-  const title = metadataTitle ? metadataTitle.replace(/^书名\s*[：:]\s*/, '') : (preamble.find((l) => l.startsWith('《')) || chapters[0]?.title || '未命名');
+  const title = markdownTitle || (metadataTitle ? metadataTitle.replace(/^书名\s*[：:]\s*/, '') : (preamble.find((l) => l.startsWith('《')) || chapters[0]?.title || '未命名'));
   return { title, chapters };
 }
 
@@ -380,8 +427,14 @@ async function loadFile(filePath, silent = false) {
   const res = await window.api.readText(filePath);
   if (!res.ok) { if (!silent) alert('读取失败：' + res.error); return; }
   currentFile = res.path;
-  isMarkdown = /\.(md|markdown)$/i.test(res.path);
-  book = parseTxt(res.content);
+  sourceFormat = res.format || (/\.(md|markdown)$/i.test(res.path) ? 'md' : /\.epub$/i.test(res.path) ? 'epub' : 'txt');
+  isMarkdown = sourceFormat === 'md';
+  book = sourceFormat === 'epub' ? res.book : parseTxt(res.content);
+  if (!book || !Array.isArray(book.chapters) || !book.chapters.length) {
+    if (!silent) alert('读取失败：文件中没有可阅读的章节');
+    return;
+  }
+  $('btnConvert').disabled = false;
   $('topTitle').textContent = book.title;
   renderToc();
   const saved = loadProgress();
@@ -425,10 +478,22 @@ window.addEventListener('DOMContentLoaded', async () => {
     const f = await window.api.chooseFile();
     if (f) loadFile(f);
   });
+  $('btnConvert').addEventListener('click', openConvertModal);
+  $('convertCancel').addEventListener('click', closeConvertModal);
+  $('convertModal').addEventListener('click', (event) => {
+    if (event.target === $('convertModal')) closeConvertModal();
+  });
+  document.querySelectorAll('.format-option').forEach((button) => {
+    button.addEventListener('click', () => convertCurrentBook(button.dataset.format));
+  });
   // 键盘翻页/翻章
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && !$('removeBookModal').classList.contains('hidden')) {
       closeRemoveModal();
+      return;
+    }
+    if (e.key === 'Escape' && !$('convertModal').classList.contains('hidden')) {
+      closeConvertModal();
       return;
     }
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;

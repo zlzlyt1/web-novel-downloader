@@ -6,6 +6,7 @@ const { Downloader, getBookFromUrl } = require('./src/crawler/downloader');
 const { saveTxt, safeFileName } = require('./src/crawler/txt');
 const { metadataPath, loadLibraryMeta, saveLibraryMeta, createLibraryMeta, appendTxtChapters, mergeNewChapters } = require('./src/crawler/library');
 const { searchBooks } = require('./src/search/web-search');
+const { parseEpub, renderTxt, renderMarkdown, renderEpub } = require('./src/formats/book-formats');
 
 const APP_ID = 'com.zhangluyintao.web-novel-downloader';
 const APP_NAME = '全网小说下载器';
@@ -271,9 +272,10 @@ ipcMain.handle('dialog:chooseDir', async () => {
 });
 
 ipcMain.handle('dialog:chooseFile', async () => {
-  const r = await dialog.showOpenDialog(mainWindow, {
+  const owner = BrowserWindow.getFocusedWindow() || readerWindow || mainWindow;
+  const r = await dialog.showOpenDialog(owner, {
     properties: ['openFile'],
-    filters: [{ name: '文本 / Markdown 文件', extensions: ['txt', 'md', 'markdown'] }],
+    filters: [{ name: '电子书', extensions: ['txt', 'md', 'markdown', 'epub'] }],
   });
   return r.canceled ? null : r.filePaths[0];
 });
@@ -354,10 +356,45 @@ ipcMain.on('crawl:cancel', () => { cancelFlag = true; });
 
 ipcMain.handle('file:readText', async (event, filePath) => {
   try {
+    if (path.extname(filePath).toLowerCase() === '.epub') {
+      return { ok: true, name: path.basename(filePath), path: filePath, format: 'epub', book: parseEpub(filePath) };
+    }
     const content = fs.readFileSync(filePath, 'utf8');
-    return { ok: true, name: path.basename(filePath), path: filePath, content };
+    const format = /\.markdown?$/i.test(filePath) ? 'md' : 'txt';
+    return { ok: true, name: path.basename(filePath), path: filePath, format, content };
   } catch (e) {
     return { ok: false, error: e.message };
+  }
+});
+
+ipcMain.handle('reader:convertBook', async (event, { book, sourceFormat, targetFormat, sourcePath } = {}) => {
+  try {
+    if (!['txt', 'md', 'epub'].includes(targetFormat)) return { ok: false, error: '不支持的目标格式' };
+    if (!book || !Array.isArray(book.chapters)) return { ok: false, error: '当前书籍内容无效' };
+    const extensions = { txt: 'txt', md: 'md', epub: 'epub' };
+    const labels = { txt: 'TXT 文本', md: 'Markdown', epub: 'EPUB 电子书' };
+    const ext = extensions[targetFormat];
+    const baseName = safeFileName(book.title || (sourcePath ? path.basename(sourcePath, path.extname(sourcePath)) : '未命名'));
+    const defaultDir = sourcePath && path.isAbsolute(sourcePath) ? path.dirname(sourcePath) : app.getPath('documents');
+    const owner = BrowserWindow.fromWebContents(event.sender) || readerWindow || mainWindow;
+    const result = await dialog.showSaveDialog(owner, {
+      title: `转换为 ${labels[targetFormat]}`,
+      defaultPath: path.join(defaultDir, `${baseName}.${ext}`),
+      filters: [{ name: labels[targetFormat], extensions: [ext] }],
+    });
+    if (result.canceled || !result.filePath) return { ok: true, cancelled: true };
+    if (sourcePath && path.resolve(result.filePath) === path.resolve(sourcePath)) {
+      return { ok: false, error: '不能覆盖当前正在阅读的源文件，请选择其他文件名' };
+    }
+    const output = targetFormat === 'epub'
+      ? renderEpub(book, sourceFormat)
+      : targetFormat === 'md'
+        ? renderMarkdown(book, sourceFormat)
+        : renderTxt(book, sourceFormat);
+    fs.writeFileSync(result.filePath, output);
+    return { ok: true, filePath: result.filePath };
+  } catch (e) {
+    return { ok: false, error: e.message || String(e) };
   }
 });
 

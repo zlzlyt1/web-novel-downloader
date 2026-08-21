@@ -2,7 +2,7 @@
 
 Language: [简体中文](README.md) · [English](README.en.md)
 
-Current stable version: **2.1.8**
+Current stable version: **2.2.0**
 
 Download the Windows x64 installer and portable executable from [GitHub Releases](https://github.com/zlzlyt1/web-novel-downloader/releases).
 
@@ -10,8 +10,14 @@ The repository keeps installation instructions and SHA-256 checksums. See the ro
 
 ## Included packages
 
-- `全网小说下载器 Setup 2.1.8.exe` — installer with desktop and Start Menu shortcuts.
-- `全网小说下载器 2.1.8.exe` — portable edition; no installation required.
+- `全网小说下载器 Setup 2.2.0.exe` — installer with desktop and Start Menu shortcuts.
+- `全网小说下载器 2.2.0.exe` — portable edition; no installation required.
+
+## 2.2.0 EPUB reading and format conversion
+
+- Opens EPUB, Markdown, and TXT files in the built-in reader and bookshelf.
+- Converts the current book to either of the other formats with a theme-aware dialog.
+- Preserves the title, chapter structure, and text while simplifying images and complex styles.
 
 ## 2.1.8 manual chapter updates in downloader
 

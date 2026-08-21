@@ -13,7 +13,8 @@
       <button id="btnShelf" class="icon-btn" title="打开书架">书架</button>
       <div class="top-title" id="topTitle">阅读器</div>
       <div class="top-ops">
-        <button id="btnOpen" class="icon-btn" title="打开 TXT / Markdown 文件">打开</button>
+        <button id="btnOpen" class="icon-btn" title="打开 EPUB / Markdown / TXT 文件">打开</button>
+        <button id="btnConvert" class="icon-btn" title="在 EPUB / Markdown / TXT 之间转换" disabled>转换</button>
         <button id="btnTheme" class="icon-btn" title="切换主题">主题</button>
         <button id="btnType" class="icon-btn" title="排版设置（字号 / 行距 / 段距）">排版</button>
       </div>
@@ -70,10 +71,26 @@
       </section>
     </div>
 
+    <div id="convertModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="convertTitle">
+      <section class="modal-card">
+        <h2 id="convertTitle" class="modal-title">转换电子书格式</h2>
+        <p id="convertMessage" class="modal-message"></p>
+        <div class="format-options" aria-label="选择目标格式">
+          <button class="format-option" data-format="txt"><strong>TXT</strong><span>通用纯文本</span></button>
+          <button class="format-option" data-format="md"><strong>Markdown</strong><span>保留章节层级</span></button>
+          <button class="format-option" data-format="epub"><strong>EPUB</strong><span>电子书阅读格式</span></button>
+        </div>
+        <p id="convertStatus" class="modal-detail">转换会保留书名、章节和正文；图片与复杂样式会简化。</p>
+        <div class="modal-actions">
+          <button id="convertCancel" class="modal-btn">取消</button>
+        </div>
+      </section>
+    </div>
+
     <main class="content" id="content">
       <div class="chapter-title" id="chapterTitle">—</div>
       <div class="chapter-body" id="chapterBody">
-        <p class="placeholder">请在左上角打开一个 TXT 文件开始阅读。</p>
+        <p class="placeholder">请在左上角打开一个 EPUB、Markdown 或 TXT 文件开始阅读。</p>
       </div>
       <div class="nav">
         <button id="btnPrev" class="btn">上一章</button>

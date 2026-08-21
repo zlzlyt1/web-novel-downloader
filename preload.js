@@ -44,4 +44,5 @@ contextBridge.exposeInMainWorld('api', {
   touchReaderBook: (book) => ipcRenderer.invoke('reader:touchBook', book),
   getReaderBooks: () => ipcRenderer.invoke('reader:listBooks'),
   removeReaderBook: (filePath, action) => ipcRenderer.invoke('reader:removeBook', filePath, action),
+  convertReaderBook: (payload) => ipcRenderer.invoke('reader:convertBook', payload),
 });
