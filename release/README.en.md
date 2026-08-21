@@ -2,16 +2,22 @@
 
 Language: [简体中文](README.md) · [English](README.en.md)
 
-Current stable version: **2.1.1**
+Current stable version: **2.1.4**
 
-Download the Windows x64 installer and portable executable from the [v2.1.1 GitHub Release](https://github.com/zlzlyt1/web-novel-downloader/releases/tag/v2.1.1).
+Download the Windows x64 installer and portable executable from [GitHub Releases](https://github.com/zlzlyt1/web-novel-downloader/releases).
 
 The repository keeps installation instructions and SHA-256 checksums. See the root [`README.en.md`](../README.en.md) for project documentation.
 
 ## Included packages
 
-- `全网小说下载器 Setup 2.1.1.exe` — installer with desktop and Start Menu shortcuts.
-- `全网小说下载器 2.1.1.exe` — portable edition; no installation required.
+- `全网小说下载器 Setup 2.1.4.exe` — installer with desktop and Start Menu shortcuts.
+- `全网小说下载器 2.1.4.exe` — portable edition; no installation required.
+
+## 2.1.4 bookshelf and update features
+
+- Persistent reader bookshelf for opened TXT and Markdown files.
+- Incremental chapter updates that preserve existing text.
+- Duplicate download detection by stable chapter ID or URL.
 
 ## 2.1.1 layout fixes
 
