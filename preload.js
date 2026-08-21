@@ -30,6 +30,12 @@ contextBridge.exposeInMainWorld('api', {
   openExternal: (url) => ipcRenderer.invoke('shell:openExternal', url),
   readText: (p) => ipcRenderer.invoke('file:readText', p),
   listTxts: (dir) => ipcRenderer.invoke('file:listTxts', dir),
+  updateLibraryBook: (payload) => ipcRenderer.invoke('library:update', payload),
+  onLibraryUpdateProgress: (cb) => {
+    const listener = (_e, data) => cb(data);
+    ipcRenderer.on('library:updateProgress', listener);
+    return () => ipcRenderer.removeListener('library:updateProgress', listener);
+  },
 
   // 阅读器
   openReader: (filePath) => ipcRenderer.invoke('reader:open', filePath),
@@ -38,10 +44,4 @@ contextBridge.exposeInMainWorld('api', {
   touchReaderBook: (book) => ipcRenderer.invoke('reader:touchBook', book),
   getReaderBooks: () => ipcRenderer.invoke('reader:listBooks'),
   removeReaderBook: (filePath) => ipcRenderer.invoke('reader:removeBook', filePath),
-  updateReaderBook: (payload) => ipcRenderer.invoke('reader:update', payload),
-  onReaderUpdateProgress: (cb) => {
-    const listener = (_e, data) => cb(data);
-    ipcRenderer.on('reader:updateProgress', listener);
-    return () => ipcRenderer.removeListener('reader:updateProgress', listener);
-  },
 });

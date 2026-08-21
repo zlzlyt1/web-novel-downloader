@@ -365,7 +365,16 @@ ipcMain.handle('file:listTxts', (event, dir) => {
   try {
     const files = fs.readdirSync(dir)
       .filter((f) => f.toLowerCase().endsWith('.txt'))
-      .map((f) => ({ name: f, path: path.join(dir, f) }))
+      .map((f) => {
+        const filePath = path.join(dir, f);
+        const meta = loadLibraryMeta(filePath);
+        return {
+          name: f,
+          path: filePath,
+          chapterCount: Math.max(meta?.chapters?.length || 0, countTxtChapters(filePath)),
+          hasUpdateSource: Boolean(meta?.sourceUrl),
+        };
+      })
       .sort((a, b) => fs.statSync(b.path).mtimeMs - fs.statSync(a.path).mtimeMs);
     return { ok: true, files };
   } catch (e) {
@@ -420,26 +429,31 @@ ipcMain.handle('reader:removeBook', (event, filePath) => {
   return { ok: true };
 });
 
-// 阅读器增量更新：读取下载时保存的来源与章节标识，只追加目录中新增的章节。
+// 下载器手动续传：用户指定目标章数，只追加该范围内尚未保存的章节。
 function countTxtChapters(filePath) {
   try {
     return (fs.readFileSync(filePath, 'utf8').match(/^第\s*[0-9一二三四五六七八九十百千万零]+\s*[章节回]/gm) || []).length;
   } catch (_) { return 0; }
 }
 
-ipcMain.handle('reader:update', async (event, { filePath, sourceUrl } = {}) => {
+ipcMain.handle('library:update', async (event, { filePath, sourceUrl, endChapter } = {}) => {
   if (!filePath || !/\.txt$/i.test(filePath)) return { ok: false, error: '仅支持更新由本应用下载的 TXT 书籍' };
   if (!fs.existsSync(filePath)) return { ok: false, error: '书籍文件不存在或已被移动' };
+  const requestedEnd = Math.floor(Number(endChapter));
+  if (!Number.isFinite(requestedEnd) || requestedEnd < 1) return { ok: false, error: '请输入有效的目标章节数' };
   let meta = loadLibraryMeta(filePath);
+  let existingCount = Math.max(meta?.chapters?.length || 0, countTxtChapters(filePath));
+  if (requestedEnd <= existingCount) {
+    return { ok: true, added: 0, currentCount: existingCount, message: `当前已有 ${existingCount} 章，请输入更大的目标章数` };
+  }
   let migrated = false;
   if (!meta?.sourceUrl && !String(sourceUrl || '').trim()) {
-    return { ok: false, needsSource: true, error: '此书没有下载来源记录' };
+    return { ok: false, needsSource: true, currentCount: existingCount, error: '此书没有下载来源记录' };
   }
   if (!meta?.sourceUrl) {
     try {
       const { HttpClient } = require('./src/crawler/http');
       const sourceBook = await getBookFromUrl(String(sourceUrl).trim(), new HttpClient({ cacheDir: path.join(app.getPath('userData'), 'cache') }));
-      const existingCount = countTxtChapters(filePath);
       if (!existingCount) return { ok: false, error: '未能从此 TXT 识别章节标题，无法安全迁移更新记录' };
       meta = createLibraryMeta(filePath, String(sourceUrl).trim(), sourceBook, sourceBook.chapters.slice(0, existingCount));
       migrated = true;
@@ -453,11 +467,13 @@ ipcMain.handle('reader:update', async (event, { filePath, sourceUrl } = {}) => {
   const settings = getSettings();
   activeDownloader = new Downloader({
     minInterval: 700,
+    startChapter: existingCount + 1,
+    endChapter: requestedEnd,
     contentApiUrl: settings.contentApiUrl || '',
     contentApiToken: settings.contentApiToken || '',
     cacheDir: path.join(app.getPath('userData'), 'cache'),
     onProgress: (progress) => {
-      if (event.sender && !event.sender.isDestroyed()) event.sender.send('reader:updateProgress', progress);
+      if (event.sender && !event.sender.isDestroyed()) event.sender.send('library:updateProgress', progress);
     },
     isCancelled: () => cancelFlag,
   });
@@ -466,14 +482,25 @@ ipcMain.handle('reader:update', async (event, { filePath, sourceUrl } = {}) => {
     const { book, chapters, failed } = await activeDownloader.downloadNew(meta.sourceUrl, existingKeys);
     if (!chapters.length) {
       if (migrated) saveLibraryMeta(filePath, meta);
-      return { ok: true, added: 0, failed: 0, message: '已是最新章节', migrated };
+      const message = requestedEnd > book.chapters.length
+        ? `来源目录当前只有 ${book.chapters.length} 章，没有可追加章节`
+        : `目标范围内没有新章节，当前已有 ${existingCount} 章`;
+      return { ok: true, added: 0, failed: 0, currentCount: existingCount, availableCount: book.chapters.length, message, migrated };
     }
     const lastVolume = appendTxtChapters(filePath, chapters, meta.lastVolume || '');
     const nextMeta = mergeNewChapters(meta, chapters);
     nextMeta.bookName = book.bookName || meta.bookName || '';
     nextMeta.lastVolume = lastVolume;
     saveLibraryMeta(filePath, nextMeta);
-    return { ok: true, added: chapters.length, failed: failed.length, migrated, message: `已追加 ${chapters.length} 个新章节` };
+    return {
+      ok: true,
+      added: chapters.length,
+      failed: failed.length,
+      migrated,
+      currentCount: nextMeta.chapters.length,
+      availableCount: book.chapters.length,
+      message: `已追加 ${chapters.length} 个新章节，当前记录 ${nextMeta.chapters.length} 章`,
+    };
   } catch (e) {
     return { ok: false, error: e.message || String(e) };
   } finally {

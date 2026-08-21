@@ -1,14 +1,17 @@
-Web Novel Downloader 2.1.7 (Windows x64)
+Web Novel Downloader 2.1.8 (Windows x64)
 
 Files
-1. 全网小说下载器 Setup 2.1.7.exe
+1. 全网小说下载器 Setup 2.1.8.exe
    Installer. Choose an installation directory and create desktop/Start Menu shortcuts.
 
-2. 全网小说下载器 2.1.7.exe
+2. 全网小说下载器 2.1.8.exe
    Portable edition. No installation is required; double-click to run.
 
 Verification
 Use SHA256SUMS.txt in this folder to verify downloaded files.
+
+2.1.8 feature
+Chapter updates now live in the downloader. Each downloaded book shows its current chapter count; enter a larger target and append only unseen chapters in that range while preserving existing text.
 
 2.1.7 fix
 Typography values now update immediately under the correct row. Font size, line spacing, paragraph spacing, and page margin no longer display the previous click's value.

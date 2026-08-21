@@ -6,6 +6,7 @@ let currentBook = null; // 最近一次 fetchBook 的完整书籍对象（含 ch
 let outDir = '';
 let lookupDir = ''; // 已下载书籍的查找目录，空 = 使用保存目录
 let lastSearchUrl = '';
+let activeUpdateButton = null;
 
 // ---- 主题 ----
 function getTheme() {
@@ -37,7 +38,43 @@ async function init() {
       $('contentApiToken').value = cfgRes.config.contentApiToken || '';
     }
   } catch (_) {}
+  window.api.onLibraryUpdateProgress((progress) => {
+    if (!activeUpdateButton) return;
+    if (progress.stage === 'chapter') activeUpdateButton.textContent = `${progress.done || 0}/${progress.total || 0}`;
+    else if (progress.stage === 'book') activeUpdateButton.textContent = '检查中…';
+  });
   refreshList();
+}
+
+async function updateDownloadedBook(file, targetInput, button) {
+  const currentCount = Number(file.chapterCount) || 0;
+  const endChapter = Math.floor(Number(targetInput.value));
+  if (!Number.isFinite(endChapter) || endChapter <= currentCount) {
+    return alert(`当前已有 ${currentCount} 章，请把目标章数手动增加到 ${currentCount + 1} 或更大`);
+  }
+
+  const originalText = button.textContent;
+  button.disabled = true;
+  targetInput.disabled = true;
+  activeUpdateButton = button;
+  button.textContent = '准备中…';
+  try {
+    let result = await window.api.updateLibraryBook({ filePath: file.path, endChapter });
+    if (result.needsSource) {
+      const sourceUrl = prompt('这本旧版 TXT 没有来源记录，请粘贴书籍目录页链接。\n原有正文不会改动，只会追加到你填写的目标章数：');
+      if (!sourceUrl || !sourceUrl.trim()) return;
+      result = await window.api.updateLibraryBook({ filePath: file.path, sourceUrl: sourceUrl.trim(), endChapter });
+    }
+    if (!result.ok) return alert('更新失败：' + (result.error || '未知错误'));
+    const suffix = result.failed ? `，其中 ${result.failed} 章下载失败并保留占位` : '';
+    alert(`${result.migrated ? '已建立来源记录，' : ''}${result.message}${suffix}`);
+    await refreshList();
+  } finally {
+    if (activeUpdateButton === button) activeUpdateButton = null;
+    button.disabled = false;
+    targetInput.disabled = false;
+    button.textContent = originalText;
+  }
 }
 
 async function saveContentApi() {
@@ -92,17 +129,38 @@ async function refreshList() {
   }
   for (const f of res.files) {
     const li = document.createElement('li');
+    const info = document.createElement('span');
+    info.className = 'book-info';
     const nameSpan = document.createElement('span');
     nameSpan.className = 'name';
     nameSpan.textContent = f.name.replace(/\.txt$/i, '');
+    const countSpan = document.createElement('span');
+    countSpan.className = 'book-count';
+    countSpan.textContent = f.chapterCount ? `已下载 ${f.chapterCount} 章` : '未识别章节数';
+    info.append(nameSpan, countSpan);
     const ops = document.createElement('span');
     ops.className = 'ops';
+    const updateLabel = document.createElement('span');
+    updateLabel.className = 'update-label';
+    updateLabel.textContent = '更新到';
+    const targetInput = document.createElement('input');
+    targetInput.className = 'book-update-target';
+    targetInput.type = 'number';
+    targetInput.min = String((Number(f.chapterCount) || 0) + 1);
+    targetInput.step = '1';
+    targetInput.value = targetInput.min;
+    targetInput.title = '手动输入要更新到的总章节数';
+    const updateBtn = document.createElement('button');
+    updateBtn.className = 'btn';
+    updateBtn.textContent = '追加';
+    updateBtn.title = f.hasUpdateSource ? '保留现有章节，只追加到目标章数' : '首次更新需要提供原书目录链接';
+    updateBtn.onclick = () => updateDownloadedBook(f, targetInput, updateBtn);
     const readBtn = document.createElement('button');
     readBtn.className = 'btn';
     readBtn.textContent = '阅读';
     readBtn.onclick = () => window.api.openReader(f.path);
-    ops.appendChild(readBtn);
-    li.appendChild(nameSpan);
+    ops.append(updateLabel, targetInput, updateBtn, readBtn);
+    li.appendChild(info);
     li.appendChild(ops);
     ul.appendChild(li);
   }

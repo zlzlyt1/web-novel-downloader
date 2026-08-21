@@ -4,6 +4,11 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { appendTxtChapters, createLibraryMeta, mergeNewChapters } = require('../src/crawler/library');
+const { selectChapterRange } = require('../src/crawler/downloader');
+
+const directory = Array.from({ length: 8 }, (_, index) => ({ itemId: `chapter-${index + 1}`, title: `第${index + 1}章` }));
+assert.deepStrictEqual(selectChapterRange(directory, 4, 6).map((chapter) => chapter.itemId), ['chapter-4', 'chapter-5', 'chapter-6']);
+assert.deepStrictEqual(selectChapterRange(directory, 9, 12), [], '起始章超过现有目录时不能错误下载最后一章');
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'novel-update-'));
 const file = path.join(dir, 'test.txt');

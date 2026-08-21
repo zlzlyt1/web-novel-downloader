@@ -15,6 +15,15 @@ function chapterKey(chapter) {
   return String(chapter?.itemId || chapter?.url || '').trim();
 }
 
+function selectChapterRange(chapters, startChapter = 1, endChapter = 0) {
+  const source = Array.isArray(chapters) ? chapters : [];
+  const startIdx = Math.max(0, Math.min((Number(startChapter) || 1) - 1, source.length));
+  const endIdx = Number(endChapter)
+    ? Math.max(startIdx, Math.min(Number(endChapter), source.length))
+    : source.length;
+  return source.slice(startIdx, endIdx);
+}
+
 async function getBookFromUrl(url, http) {
   if (!isFanqieUrl(url)) return generic.getBook(url, http);
   const bookId = await fanqie.resolveBookId(url, http);
@@ -60,10 +69,7 @@ class Downloader {
     const book = await getBookFromUrl(url, this.http);
     this._report({ stage: 'book', bookName: book.bookName, message: `已获取《${book.bookName}》，共 ${book.chapters.length} 章` });
 
-    const len = book.chapters.length;
-    const startIdx = len ? Math.max(0, Math.min((this.startChapter || 1) - 1, len - 1)) : 0;
-    const endIdx = this.endChapter ? Math.max(startIdx, Math.min(this.endChapter, len)) : len;
-    return this._downloadMetas(book, useFanqie, book.chapters.slice(startIdx, endIdx));
+    return this._downloadMetas(book, useFanqie, selectChapterRange(book.chapters, this.startChapter, this.endChapter));
   }
 
   /**
@@ -76,7 +82,8 @@ class Downloader {
     const useFanqie = isFanqieUrl(url);
     const book = await getBookFromUrl(url, this.http);
     const seen = new Set(Array.from(existingKeys, (key) => String(key || '').trim()).filter(Boolean));
-    const metas = book.chapters.filter((chapter) => {
+    const rangedChapters = selectChapterRange(book.chapters, this.startChapter, this.endChapter);
+    const metas = rangedChapters.filter((chapter) => {
       const key = chapterKey(chapter);
       if (!key || seen.has(key)) return false;
       seen.add(key); // 目录自身出现重复链接时，也只下载一次。
@@ -160,4 +167,4 @@ class Downloader {
   }
 }
 
-module.exports = { Downloader, isFanqieUrl, getBookFromUrl, chapterKey };
+module.exports = { Downloader, isFanqieUrl, getBookFromUrl, chapterKey, selectChapterRange };

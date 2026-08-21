@@ -2,7 +2,7 @@
 
 Language: [简体中文](README.md) · [English](README.en.md)
 
-Current stable version: **2.1.7**
+Current stable version: **2.1.8**
 
 Download the Windows x64 installer and portable executable from [GitHub Releases](https://github.com/zlzlyt1/web-novel-downloader/releases).
 
@@ -10,8 +10,14 @@ The repository keeps installation instructions and SHA-256 checksums. See the ro
 
 ## Included packages
 
-- `全网小说下载器 Setup 2.1.7.exe` — installer with desktop and Start Menu shortcuts.
-- `全网小说下载器 2.1.7.exe` — portable edition; no installation required.
+- `全网小说下载器 Setup 2.1.8.exe` — installer with desktop and Start Menu shortcuts.
+- `全网小说下载器 2.1.8.exe` — portable edition; no installation required.
+
+## 2.1.8 manual chapter updates in downloader
+
+- Removes the update control from the reader and adds it to each downloaded book in the downloader.
+- Shows the existing chapter count and accepts a manually increased target chapter number.
+- Preserves existing text, applies chapter-range selection, and appends only unseen chapters.
 
 ## 2.1.7 typography control fix
 

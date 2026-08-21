@@ -225,10 +225,18 @@ code { background: var(--panel-bg); padding: 1px 5px; border-radius: 4px; }
 .book-list li {
   display: flex; align-items: center; justify-content: space-between;
   padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 6px;
+  gap: 10px;
 }
-.book-list .name { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.book-list .book-info { min-width: 0; flex: 1; }
+.book-list .name { display: block; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.book-list .book-count { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
 .book-list .muted { color: var(--muted); font-size: 12px; margin-left: 10px; flex-shrink: 0; }
-.book-list .ops { display: flex; gap: 8px; flex-shrink: 0; }
+.book-list .ops { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.book-list .update-label { color: var(--muted); font-size: 12px; white-space: nowrap; }
+.book-list .book-update-target {
+  width: 72px; min-width: 0; padding: 7px 6px; text-align: center;
+  border: 1px solid var(--border); border-radius: 7px; background: var(--input-bg); color: var(--text);
+}
 .empty { color: var(--muted); text-align: center; padding: 20px 0; }
 
 /* 窄窗口自适应 */
@@ -242,6 +250,8 @@ code { background: var(--panel-bg); padding: 1px 5px; border-radius: 4px; }
   .field-row { flex-wrap: wrap; }
   .field-row label { width: auto; }
   .book-dir-row { flex-wrap: wrap; }
+  .book-list li { align-items: flex-start; flex-direction: column; }
+  .book-list .ops { width: 100%; flex-wrap: wrap; }
   .range-label, .hint { white-space: normal; }
   .container { margin: 8px; }
 }
