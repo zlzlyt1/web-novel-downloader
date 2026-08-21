@@ -96,8 +96,7 @@ body[data-theme="dark"] {
   word-spacing: normal;
   letter-spacing: normal;
 }
-.chapter-body[data-paragraph-mode="balanced"] { max-width: 960px; margin-left: auto; margin-right: auto; }
-.chapter-body[data-paragraph-mode="fill"] { max-width: none; width: 100%; }
+.chapter-body[data-paragraph-mode="optimized"] { max-width: none; width: 100%; }
 .placeholder { color: var(--muted); text-align: center; text-indent: 0; }
 
 /* ---- Markdown 样式（随主题变量自动适配） ---- */
@@ -165,6 +164,7 @@ body[data-theme="dark"] {
 }
 .tp-row { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
 .tp-label { width: 36px; color: var(--muted); font-size: 13px; flex-shrink: 0; }
+.tp-label.wide { width: 58px; }
 .tp-btn {
   width: 30px; height: 28px;
   border: 1px solid var(--border); background: var(--bg); color: var(--text);
@@ -178,7 +178,7 @@ body[data-theme="dark"] {
   border-radius: 6px; cursor: pointer; font-size: 13px;
 }
 .tp-mode-btn:hover { border-color: var(--accent); color: var(--accent); }
-.tp-mode-btn[data-mode="fill"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.tp-mode-btn[data-mode="optimized"] { background: var(--accent); border-color: var(--accent); color: #fff; }
 
 .nav { max-width: none; margin: 26px 0 0; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .nav .btn {

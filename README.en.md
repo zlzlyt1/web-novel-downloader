@@ -11,7 +11,7 @@ A Windows Electron desktop app that searches novel titles across the web, loads 
 - Generic parser for chapter links and article text, with range selection, rate limiting, failed-chapter placeholders, and TXT export.
 - Dedicated adapter for Fanqie public book/reading pages and text decoding.
 - Skips paid or locked chapters; does not bypass login, payment, CAPTCHA, or access controls.
-- Built-in reader with table of contents, font size, line height, paragraph spacing, themes, progress, and balanced/full-width layout modes.
+- Built-in reader with table of contents, font size, line height, paragraph spacing, themes, progress, and paragraph optimization that turns sentence-per-paragraph mobile exports into natural desktop-width paragraphs while preserving chapters, dialogue, and scene breaks.
 - Reader updates that preserve existing text and append only newly discovered chapters. Older TXT files can be migrated by supplying the book index URL once.
 - Re-downloading the same book automatically deduplicates and checks for updates. A book with the same title from another source is saved separately rather than overwritten.
 - A persistent bookshelf automatically collects opened TXT/Markdown files, shows chapter counts, and can remove a record without deleting the local file.
@@ -19,10 +19,10 @@ A Windows Electron desktop app that searches novel titles across the web, loads 
 
 ## Download
 
-Windows x64 2.1.5 packages are built in `release/`:
+Windows x64 2.1.6 packages are built in `release/`:
 
-- `全网小说下载器 Setup 2.1.5.exe` — installer.
-- `全网小说下载器 2.1.5.exe` — portable edition.
+- `全网小说下载器 Setup 2.1.6.exe` — installer.
+- `全网小说下载器 2.1.6.exe` — portable edition.
 
 See [`release/README.md`](release/README.md) or [`release/README.en.md`](release/README.en.md) for release notes and verification files.
 

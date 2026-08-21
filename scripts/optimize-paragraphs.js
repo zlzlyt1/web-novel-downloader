@@ -6,7 +6,7 @@ const path = require('node:path');
 const { optimizeDocumentText, MODE_OPTIONS } = require('../src/renderer/paragraph-optimizer');
 
 function printUsage() {
-  console.log('用法: node scripts/optimize-paragraphs.js <输入.txt> [输出.txt] [--mode balanced|fill]');
+  console.log('用法: node scripts/optimize-paragraphs.js <输入.txt> [输出.txt] [--mode optimized]');
   console.log('默认在原文件旁生成“文件名.段落优化.txt”，不会覆盖原文件。');
 }
 
@@ -16,14 +16,14 @@ if (!args.length || args.includes('--help') || args.includes('-h')) {
   process.exit(args.length ? 0 : 1);
 }
 
-let mode = 'fill';
+let mode = 'optimized';
 const modeIndex = args.indexOf('--mode');
 if (modeIndex >= 0) {
   mode = args[modeIndex + 1];
   args.splice(modeIndex, 2);
 }
 if (!MODE_OPTIONS[mode] || mode === 'off') {
-  console.error(`不支持的模式：${mode}；可选 balanced 或 fill。`);
+  console.error(`不支持的模式：${mode}；可选 optimized。`);
   process.exit(1);
 }
 
@@ -44,7 +44,7 @@ const source = fs.readFileSync(inputPath, 'utf8');
 const result = optimizeDocumentText(source, { mode });
 fs.writeFileSync(outputPath, result.text, 'utf8');
 
-console.log(`段落优化完成（${mode === 'fill' ? '铺满' : '均衡'}模式）`);
+console.log('段落优化完成（电脑窗口自适应）');
 console.log(`原段落：${result.sourceParagraphs}`);
 console.log(`优化后：${result.outputParagraphs}`);
 console.log(`合并数：${result.mergedCount}`);

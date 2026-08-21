@@ -7,17 +7,16 @@
 
   const MODE_OPTIONS = {
     off: { targetLength: 0, maxLength: 0, minBreakLength: 0 },
-    balanced: { targetLength: 96, maxLength: 168, minBreakLength: 36 },
-    fill: { targetLength: 0, maxLength: 0, minBreakLength: 0 }
+    optimized: { targetLength: 110, maxLength: 180, minBreakLength: 72 }
   };
 
-  const CHAPTER_RE = /^第\s*[0-9一二三四五六七八九十百千万零〇两]+\s*[章节回卷集部篇]/;
+  const CHAPTER_RE = /^(?:第\s*[0-9一二三四五六七八九十百千万零〇两]+\s*[章节回卷集部篇]|\d{1,6}\s+\S)/;
   const NAMED_SECTION_RE = /^(序章|序言|楔子|引子|正文|尾声|番外|后记)(?:\s|$|[：:])/;
   const META_RE = /^(书名|作者|简介|内容简介|标签|类型|更新时间|字数)\s*[：:]/;
-  const SCENE_BREAK_RE = /^(?:[—\-=_*·•~～…＊☆★◆◇]+\s*){2,}$/;
+  const SCENE_BREAK_RE = /^(?:[.。—\-=_*·•~～…＊☆★◆◇]+\s*){2,}$/;
   const BRACKET_NOTE_RE = /^[【\[［][^】\]］]{1,40}[】\]］]$/;
-  const QUOTE_START_RE = /^[“「『]/;
-  const SENTENCE_END_RE = /[。！？!?…][”」』）)】》]?$/;
+  const QUOTE_START_RE = /^(?:[“「『]|[^，。！？!?：:\s]{1,12}[：:])/;
+  const SPEECH_CUE_RE = /(?:说|说道|问|问道|答|答道|解释|解释道|喊|喊道|叫|叫道|骂|骂道|笑|笑道|叹|叹道)[。！!？?:：]$/;
   const CJK_RE = /[\p{Script=Han}\u3400-\u4dbf\uf900-\ufaff]/u;
 
   function visibleLength(text) {
@@ -62,14 +61,14 @@
 
   function resolveOptions(options) {
     const requestedMode = options && options.mode;
-    const mode = Object.prototype.hasOwnProperty.call(MODE_OPTIONS, requestedMode) ? requestedMode : 'fill';
+    const mode = Object.prototype.hasOwnProperty.call(MODE_OPTIONS, requestedMode) ? requestedMode : 'optimized';
     return { mode, ...MODE_OPTIONS[mode], ...(options || {}) };
   }
 
   function optimizeParagraphs(paragraphs, options) {
     const settings = resolveOptions(options);
     const source = (paragraphs || []).map(normalizeInlineWhitespace).filter(Boolean);
-    if (settings.mode === 'off' || settings.mode === 'fill' || source.length < 2) {
+    if (settings.mode === 'off' || source.length < 2) {
       return { paragraphs: source, groups: source.map((p) => [p]), mergedCount: 0, sourceCount: source.length };
     }
 
@@ -91,6 +90,13 @@
         continue;
       }
 
+      // 对话、人物冒号发言和引出发言的提示句保持独立，避免人物发言串进叙述段。
+      if (isDialogue(paragraph) || SPEECH_CUE_RE.test(paragraph)) {
+        flush();
+        groups.push([paragraph]);
+        continue;
+      }
+
       const paragraphLength = visibleLength(paragraph);
       if (!current.length) {
         current.push(paragraph);
@@ -98,12 +104,11 @@
         continue;
       }
 
-      const previous = current[current.length - 1];
       const candidateLength = currentLength + paragraphLength;
       const exceedsMax = candidateLength > settings.maxLength && currentLength >= settings.minBreakLength;
-      const semanticBreak = SENTENCE_END_RE.test(previous) || isDialogue(paragraph) || isDialogue(previous) !== isDialogue(paragraph);
+      const reachedDesktopParagraph = currentLength >= settings.targetLength;
 
-      if (exceedsMax || semanticBreak) flush();
+      if (exceedsMax || reachedDesktopParagraph) flush();
       current.push(paragraph);
       currentLength += paragraphLength;
     }

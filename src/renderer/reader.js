@@ -8,10 +8,11 @@ let isMarkdown = false;
 let sidebarMode = 'toc';
 
 const THEMES = ['light', 'sepia', 'dark'];
-const PARAGRAPH_MODES = ['off', 'balanced', 'fill'];
-const PARAGRAPH_MODE_LABELS = { off: '关闭', balanced: '均衡', fill: '铺满' };
+const PARAGRAPH_MODES = ['off', 'optimized'];
+const PARAGRAPH_MODE_LABELS = { off: '关闭', optimized: '开启' };
 const VOLUME_RE = /^第\s*[0-9一二三四五六七八九十百千万零]+\s*[卷集]/;
 const CHAPTER_RE = /^第\s*[0-9一二三四五六七八九十百千万零]+\s*[章节回]/;
+const NUMBERED_CHAPTER_RE = /^\d{1,6}\s+\S/;
 
 // 将同一段落的多行合并成一行，避免文本被硬换行切碎成短段。
 // 中文之间不加空格，西文/数字之间补一个空格，保证英文单词不断开。
@@ -30,7 +31,16 @@ function joinParaLines(lines) {
 
 function parseTxt(content) {
   const text = content.replace(/\r\n/g, '\n');
-  const lines = text.split('\n');
+  const originalLines = text.split('\n');
+  // 部分手机阅读器导出的 TXT 会先放一份数字目录，正文再次出现相同标题。
+  // 从首个数字章节标题的第二次出现处开始解析，避免把目录误当成空章节。
+  let lines = originalLines;
+  const firstNumbered = originalLines.find((line) => NUMBERED_CHAPTER_RE.test(line.trim()));
+  if (firstNumbered) {
+    const normalizedFirst = firstNumbered.trim();
+    const secondIndex = originalLines.findIndex((line, index) => index > originalLines.indexOf(firstNumbered) && line.trim() === normalizedFirst);
+    if (secondIndex > 0) lines = originalLines.slice(secondIndex);
+  }
   // 判断文本格式，决定如何“主动重排”：
   //  - 有空行分隔 → 空行块内的多行合并为一段（消除硬换行）
   //  - 无空行但有行首缩进 → 以缩进行作为段落开头，后续行并入同一段
@@ -65,7 +75,7 @@ function parseTxt(content) {
     if (VOLUME_RE.test(line) && !CHAPTER_RE.test(line)) {
       flush(); curVolume = line; lastLine = line; lastWasBlank = true; continue;
     }
-    if (CHAPTER_RE.test(line)) {
+    if (CHAPTER_RE.test(line) || NUMBERED_CHAPTER_RE.test(line)) {
       flush(); cur = { title: line, volume: curVolume, paragraphs: [] };
       chapters.push(cur); lastLine = line; lastWasBlank = true; continue;
     }
@@ -102,7 +112,8 @@ function parseTxt(content) {
     preamble = [];
   }
 
-  const title = preamble.find((l) => l.startsWith('《')) || chapters[0]?.title || '未命名';
+  const metadataTitle = originalLines.map((line) => line.trim()).find((line) => /^书名\s*[：:]/.test(line));
+  const title = metadataTitle ? metadataTitle.replace(/^书名\s*[：:]\s*/, '') : (preamble.find((l) => l.startsWith('《')) || chapters[0]?.title || '未命名');
   return { title, chapters };
 }
 
@@ -185,7 +196,7 @@ function renderChapter(i) {
   } else {
     body.className = 'chapter-body';
     const settings = getSettings();
-    const mode = settings.paragraphMode || 'fill';
+    const mode = settings.paragraphMode === 'off' ? 'off' : 'optimized';
     const optimized = window.ParagraphOptimizer
       ? window.ParagraphOptimizer.optimizeParagraphs(ch.paragraphs, { mode }).paragraphs
       : ch.paragraphs;
@@ -299,7 +310,7 @@ function adjustMargin(delta) {
 
 function cycleParagraphMode() {
   const s = getSettings();
-  const current = s.paragraphMode || 'fill';
+  const current = s.paragraphMode === 'off' ? 'off' : 'optimized';
   const index = PARAGRAPH_MODES.indexOf(current);
   s.paragraphMode = PARAGRAPH_MODES[(index + 1) % PARAGRAPH_MODES.length];
   saveSettings(s);
@@ -313,8 +324,8 @@ function refreshTypePanel() {
   $('tpLineVal').textContent = (s.lineHeight ?? 1.9).toFixed(1);
   $('tpParaVal').textContent = (s.paraSpacing ?? 1).toFixed(1);
   $('tpMarginVal').textContent = s.pageMargin ?? 24;
-  const paragraphMode = s.paragraphMode || 'fill';
-  $('tpParagraphMode').textContent = PARAGRAPH_MODE_LABELS[paragraphMode] || PARAGRAPH_MODE_LABELS.fill;
+  const paragraphMode = s.paragraphMode === 'off' ? 'off' : 'optimized';
+  $('tpParagraphMode').textContent = PARAGRAPH_MODE_LABELS[paragraphMode] || PARAGRAPH_MODE_LABELS.optimized;
   $('tpParagraphMode').dataset.mode = paragraphMode;
 }
 
