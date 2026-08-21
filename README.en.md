@@ -1,6 +1,6 @@
 # Web Novel Downloader + Reader
 
-Language: [简体中文](README.md) · [English](README.en.md)
+[简体中文](README.md) · [English](README.en.md)
 
 A Windows Electron desktop app that searches novel titles across the web, loads book indexes, downloads publicly accessible chapters as UTF-8 TXT, and reads them in the built-in reader.
 
