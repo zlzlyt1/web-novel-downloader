@@ -12,7 +12,11 @@ novels/
 *.tmp
 
 # Electron build output and release archives
-release/
+release/*
+!release/
+!release/README.md
+!release/安装说明.txt
+!release/SHA256SUMS.txt
 dist/
 out/
 
