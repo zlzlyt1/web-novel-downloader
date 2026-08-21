@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>阅读器</title>
+  <link rel="stylesheet" href="reader.css" />
+</head>
+<body>
+  <div class="reader">
+    <header class="topbar">
+      <button id="btnToc" class="icon-btn" title="打开/收起目录">目录</button>
+      <div class="top-title" id="topTitle">阅读器</div>
+      <div class="top-ops">
+        <button id="btnOpen" class="icon-btn" title="打开 TXT / Markdown 文件">打开</button>
+        <button id="btnTheme" class="icon-btn" title="切换主题">主题</button>
+        <button id="btnType" class="icon-btn" title="排版设置（字号 / 行距 / 段距）">排版</button>
+      </div>
+    </header>
+
+    <div id="typePanel" class="type-panel hidden">
+      <div class="tp-row">
+        <span class="tp-label">字号</span>
+        <button id="tpFontDec" class="tp-btn" title="减小字号">−</button>
+        <span id="tpFontVal" class="tp-val">18</span>
+        <button id="tpFontInc" class="tp-btn" title="增大字号">+</button>
+      </div>
+      <div class="tp-row">
+        <span class="tp-label">行距</span>
+        <button id="tpLineDec" class="tp-btn" title="减小行距">−</button>
+        <span id="tpLineVal" class="tp-val">1.9</span>
+        <button id="tpLineInc" class="tp-btn" title="增大行距">+</button>
+      </div>
+      <div class="tp-row">
+        <span class="tp-label">段距</span>
+        <button id="tpParaDec" class="tp-btn" title="减小段距">−</button>
+        <span id="tpParaVal" class="tp-val">1.0</span>
+        <button id="tpParaInc" class="tp-btn" title="增大段距">+</button>
+      </div>
+      <div class="tp-row">
+        <span class="tp-label">页边距</span>
+        <button id="tpMarginDec" class="tp-btn" title="减小页边距">−</button>
+        <span id="tpMarginVal" class="tp-val">24</span>
+        <button id="tpMarginInc" class="tp-btn" title="增大页边距">+</button>
+      </div>
+      <div class="tp-row">
+        <span class="tp-label">段落</span>
+        <button id="tpParagraphMode" class="tp-mode-btn" title="切换自动段落重排强度">铺满</button>
+      </div>
+    </div>
+
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-head" id="sidebarTitle">目录</div>
+      <ul id="toc" class="toc"></ul>
+    </aside>
+
+    <div class="overlay" id="overlay"></div>
+
+    <main class="content" id="content">
+      <div class="chapter-title" id="chapterTitle">—</div>
+      <div class="chapter-body" id="chapterBody">
+        <p class="placeholder">请在左上角打开一个 TXT 文件开始阅读。</p>
+      </div>
+      <div class="nav">
+        <button id="btnPrev" class="btn">上一章</button>
+        <span id="navPos" class="nav-pos">—</span>
+        <button id="btnNext" class="btn">下一章</button>
+      </div>
+    </main>
+  </div>
+
+  <script src="markdown.js"></script>
+  <script src="paragraph-optimizer.js"></script>
+  <script src="reader.js"></script>
+</body>
+</html>

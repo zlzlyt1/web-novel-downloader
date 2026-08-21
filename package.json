@@ -1,0 +1,88 @@
+{
+  "name": "web-novel-downloader",
+  "version": "2.1.1",
+  "productName": "全网小说下载器",
+  "description": "全网公开小说搜索、TXT 下载与本地阅读桌面应用",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "cli": "node src/crawler/cli.js",
+    "optimize": "node scripts/optimize-paragraphs.js",
+    "test:paragraphs": "node scripts/test-paragraph-optimizer.js",
+    "test:search": "node scripts/test-web-search.js",
+    "test:generic": "node scripts/test-generic-crawler.js",
+    "test:fanqie": "node scripts/test-fanqie-directory.js",
+    "build:icon": "node scripts/build-icon.js",
+    "pack": "npm run build:icon && electron-builder --dir --x64",
+    "dist": "npm run test:paragraphs && npm run test:search && npm run test:generic && npm run test:fanqie && npm run build:icon && electron-builder --win nsis portable --x64"
+  },
+  "author": "张陆胤韬",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^43.4.1",
+    "electron-builder": "^26.15.3",
+    "fonteditor-core": "^2.6.3",
+    "sharp": "^0.34.3",
+    "wawoff2": "^2.0.1"
+  },
+  "build": {
+    "appId": "com.zhangluyintao.web-novel-downloader",
+    "productName": "全网小说下载器",
+    "executableName": "全网小说下载器",
+    "asar": true,
+    "compression": "maximum",
+    "npmRebuild": false,
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "package.json",
+      "build/app.ico",
+      "src/crawler/charset.json",
+      "src/crawler/deobfuscate.js",
+      "src/crawler/downloader.js",
+      "src/crawler/fanqie.js",
+      "src/crawler/generic.js",
+      "src/crawler/http.js",
+      "src/crawler/txt.js",
+      "src/search/web-search.js",
+      "src/renderer/**/*"
+    ],
+    "electronLanguages": [
+      "zh-CN",
+      "en-US"
+    ],
+    "win": {
+      "icon": "build/app.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "全网小说下载器",
+      "uninstallDisplayName": "全网小说下载器",
+      "deleteAppDataOnUninstall": false
+    }
+  },
+  "dependencies": {
+    "cheerio": "^1.1.2"
+  }
+}

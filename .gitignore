@@ -1,0 +1,28 @@
+# Dependencies and package-manager caches
+node_modules/
+.npm-cache/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local data and generated caches
+cache/
+novels/
+*.log
+*.tmp
+
+# Electron build output and release archives
+release/
+dist/
+out/
+
+# Local editor / OS files
+.vscode/
+.idea/
+*.code-workspace
+Thumbs.db
+Desktop.ini
+
+# Local runtime state
+userData/
+*-state.json

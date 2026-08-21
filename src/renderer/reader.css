@@ -1,0 +1,184 @@
+:root {
+  --topbar-h: 50px;
+}
+
+* { box-sizing: border-box; }
+
+.hidden { display: none !important; }
+
+body { margin: 0; font-family: -apple-system, "Segoe UI", "Microsoft YaHei", "PingFang SC", serif; }
+
+/* 主题变量（由 body[data-theme] 控制） */
+body[data-theme="light"] {
+  --bg: #ffffff; --text: #2b2b2b; --muted: #8a8f98; --panel: #f5f6f8; --border: #e6e8ec; --accent: #e84c3d;
+}
+body[data-theme="sepia"] {
+  --bg: #f5f0e6; --text: #4a3f2f; --muted: #9a8f7a; --panel: #ece3d3; --border: #ddd2bc; --accent: #b08968;
+}
+body[data-theme="dark"] {
+  --bg: #1c1c1e; --text: #d5d5d7; --muted: #8e8e93; --panel: #2c2c2e; --border: #3a3a3c; --accent: #ff7b6b;
+}
+
+.reader { display: flex; flex-direction: column; height: 100vh; background: var(--bg); color: var(--text); }
+
+/* 滚动条随主题（浅色/羊皮纸/深色）自动适配 */
+.reader *::-webkit-scrollbar { width: 10px; height: 10px; }
+.reader *::-webkit-scrollbar-track { background: transparent; }
+.reader *::-webkit-scrollbar-thumb {
+  background: var(--border); border-radius: 5px;
+  border: 2px solid var(--bg);
+}
+.reader *::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+.reader *::-webkit-scrollbar-corner { background: transparent; }
+
+.topbar {
+  -webkit-app-region: drag;
+  min-height: var(--topbar-h);
+  display: flex; align-items: center; gap: 10px;
+  flex-wrap: wrap;
+  padding: 0 150px 0 14px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.topbar button { -webkit-app-region: no-drag; }
+.top-title { flex: 1; min-width: 0; text-align: center; font-size: 15px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.top-ops { display: flex; gap: 6px; }
+
+.icon-btn {
+  border: none; background: transparent; color: var(--text);
+  font-size: 13px; padding: 6px 10px; border-radius: 6px; cursor: pointer;
+  white-space: nowrap;
+}
+.icon-btn:hover { background: var(--border); }
+
+.sidebar {
+  position: fixed; top: var(--topbar-h); left: 0; bottom: 0; width: 260px;
+  background: var(--panel); border-right: 1px solid var(--border);
+  transform: translateX(-100%); transition: transform .2s;
+  z-index: 20; display: flex; flex-direction: column;
+}
+.sidebar.open { transform: translateX(0); }
+.sidebar-head { padding: 12px 16px; font-weight: 600; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.toc { list-style: none; margin: 0; padding: 8px; overflow-y: auto; flex: 1; }
+.toc li { padding: 7px 12px; border-radius: 6px; cursor: pointer; font-size: 13.5px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.toc li:hover { background: var(--border); }
+.toc li.active { background: var(--accent); color: #fff; }
+.toc li.volume { color: var(--muted); font-weight: 600; cursor: default; margin-top: 6px; }
+.toc li.volume:hover { background: transparent; }
+
+.overlay { position: fixed; inset: var(--topbar-h) 0 0 0; background: rgba(0,0,0,.35); z-index: 10; opacity: 0; pointer-events: none; transition: opacity .2s; }
+.overlay.show { opacity: 1; pointer-events: auto; }
+
+.content { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 20px var(--page-margin, 24px) 36px; }
+.chapter-title { max-width: none; margin: 0 0 18px; font-size: 22px; font-weight: 600; text-align: center; word-break: break-word; }
+.chapter-body { max-width: none; width: 100%; margin: 0; font-size: var(--font-size, 18px); line-height: var(--line-height, 1.9); overflow-wrap: break-word; }
+.chapter-body p {
+  margin: 0 0 var(--para-margin, 1em);
+  text-indent: 2em;
+  text-align: start;
+  text-justify: auto;
+  white-space: normal;
+  word-spacing: normal;
+  letter-spacing: normal;
+}
+.chapter-body[data-paragraph-mode="balanced"] { max-width: 960px; margin-left: auto; margin-right: auto; }
+.chapter-body[data-paragraph-mode="fill"] { max-width: none; width: 100%; }
+.placeholder { color: var(--muted); text-align: center; text-indent: 0; }
+
+/* ---- Markdown 样式（随主题变量自动适配） ---- */
+.chapter-body.md { text-indent: 0; }
+.chapter-body.md h1, .chapter-body.md h2, .chapter-body.md h3,
+.chapter-body.md h4, .chapter-body.md h5, .chapter-body.md h6 {
+  margin: 1.2em 0 0.6em; line-height: 1.4; color: var(--text); font-weight: 700;
+}
+.chapter-body.md h1 { font-size: 1.6em; }
+.chapter-body.md h2 { font-size: 1.4em; }
+.chapter-body.md h3 { font-size: 1.25em; }
+.chapter-body.md h4 { font-size: 1.1em; }
+.chapter-body.md h5 { font-size: 1em; }
+.chapter-body.md h6 { font-size: 0.9em; color: var(--muted); }
+.chapter-body.md p { margin: 0 0 var(--para-margin, 1em); text-indent: 0; }
+.chapter-body.md strong { font-weight: 700; }
+.chapter-body.md em { font-style: italic; }
+.chapter-body.md del { color: var(--muted); }
+.chapter-body.md code {
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 4px; padding: 1px 5px; font-family: Consolas, Menlo, monospace; font-size: 0.9em;
+}
+.chapter-body.md pre {
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 8px; padding: 12px 14px; margin: 0 0 var(--para-margin, 1em);
+  overflow-x: auto; text-indent: 0;
+}
+.chapter-body.md pre code { background: transparent; border: none; padding: 0; font-size: 0.88em; }
+.chapter-body.md blockquote {
+  margin: 0 0 var(--para-margin, 1em); padding: 6px 14px;
+  border-left: 4px solid var(--accent); background: var(--panel);
+  border-radius: 0 6px 6px 0; color: var(--muted);
+}
+.chapter-body.md blockquote p { text-indent: 0; margin: 0; }
+.chapter-body.md ul, .chapter-body.md ol {
+  margin: 0 0 var(--para-margin, 1em); padding-left: 1.6em;
+}
+.chapter-body.md li { margin: 4px 0; }
+.chapter-body.md li > ul, .chapter-body.md li > ol { margin-bottom: 0; }
+.chapter-body.md hr { border: none; border-top: 1px solid var(--border); margin: 1.6em 0; }
+.chapter-body.md a { color: var(--accent); text-decoration: underline; }
+.chapter-body.md a:hover { opacity: 0.85; }
+.chapter-body.md img { max-width: 100%; height: auto; border-radius: 8px; margin: 0.5em auto; display: block; }
+.chapter-body.md table {
+  border-collapse: collapse; margin: 0 0 var(--para-margin, 1em);
+  width: 100%; display: block; overflow-x: auto;
+}
+.chapter-body.md th, .chapter-body.md td {
+  border: 1px solid var(--border); padding: 7px 12px; font-size: 0.95em;
+}
+.chapter-body.md th { background: var(--panel); font-weight: 700; }
+.chapter-body.md tr:nth-child(even) td { background: color-mix(in srgb, var(--panel) 55%, transparent); }
+
+.type-panel {
+  position: fixed;
+  top: calc(var(--topbar-h) + 8px);
+  right: 14px;
+  z-index: 30;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  box-shadow: 0 6px 20px rgba(0,0,0,.18);
+  min-width: 210px;
+}
+.tp-row { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
+.tp-label { width: 36px; color: var(--muted); font-size: 13px; flex-shrink: 0; }
+.tp-btn {
+  width: 30px; height: 28px;
+  border: 1px solid var(--border); background: var(--bg); color: var(--text);
+  border-radius: 6px; cursor: pointer; font-size: 16px; line-height: 1;
+}
+.tp-btn:hover { border-color: var(--accent); color: var(--accent); }
+.tp-val { width: 44px; text-align: center; font-size: 13px; color: var(--text); }
+.tp-mode-btn {
+  flex: 1; min-width: 108px; height: 30px;
+  border: 1px solid var(--border); background: var(--bg); color: var(--text);
+  border-radius: 6px; cursor: pointer; font-size: 13px;
+}
+.tp-mode-btn:hover { border-color: var(--accent); color: var(--accent); }
+.tp-mode-btn[data-mode="fill"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.nav { max-width: none; margin: 26px 0 0; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.nav .btn {
+  border: 1px solid var(--border); background: var(--panel); color: var(--text);
+  padding: 8px 18px; border-radius: 8px; cursor: pointer; font-size: 14px;
+}
+.nav .btn:hover { border-color: var(--accent); color: var(--accent); }
+.nav-pos { color: var(--muted); font-size: 13px; }
+
+/* 窄窗口自适应 */
+@media (max-width: 600px) {
+  .topbar { padding-right: 120px; }
+  .icon-btn { padding: 6px 7px; font-size: 12px; }
+  .top-title { font-size: 13px; }
+  .sidebar { width: min(260px, 84vw); }
+  .chapter-title { font-size: 19px; }
+}

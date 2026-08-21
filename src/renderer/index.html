@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>全网小说下载器</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body data-theme="light">
+  <header class="topbar">
+    <div class="brand">
+      <img class="logo" width="32" height="32" src="app-icon.jpg" alt="" />
+      <div>
+        <h1>全网小说下载器</h1>
+        <p class="sub">搜索并下载公开小说正文，保存为 TXT，配套本地阅读</p>
+      </div>
+    </div>
+    <div class="topbar-ops">
+      <button id="btnTheme" class="theme-btn" title="切换到深色模式">
+        <svg id="iconMoon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></svg>
+        <svg id="iconSun" class="hidden" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="5" /><line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" /><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" /><line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" /><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" /></svg>
+      </button>
+      <button id="btnOpenReader" class="btn reader-btn" title="打开阅读器，读取任意 TXT">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></svg>
+        打开阅读器
+      </button>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card search-card">
+      <div class="section-head search-heading">
+        <h3>全网书名搜索</h3>
+        <span class="source-note">覆盖番茄、起点、纵横、晋江、17K、七猫、豆瓣等网站</span>
+      </div>
+      <div class="input-row">
+        <input id="searchTitle" type="text" maxlength="100" placeholder="输入完整书名" />
+        <button id="btnSearch" class="btn primary">搜索网络</button>
+      </div>
+      <div id="searchStatus" class="search-status hidden"></div>
+      <ul id="searchResults" class="search-results hidden"></ul>
+      <div id="searchFooter" class="search-footer hidden">
+        <button id="btnOpenAllResults" class="btn">在浏览器查看全部结果</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="input-row">
+        <input id="url" type="text" placeholder="粘贴小说书籍目录页链接" />
+        <button id="btnFetch" class="btn primary">获取信息</button>
+      </div>
+      <p class="hint">支持番茄及可识别公开章节目录的其他网站；登录、付费、验证码或纯脚本页面无法下载。</p>
+    </section>
+
+    <section class="card">
+      <div class="section-head">
+        <h3>正文源（可选）</h3>
+        <span class="source-note">接入第三方 batch_full 中转，可获取网页端不提供的付费/锁定章节正文</span>
+      </div>
+      <div class="field-row">
+        <label>正文源地址</label>
+        <input id="contentApiUrl" type="text" placeholder="https://…（batch_full 中转地址，可含完整 query）" />
+      </div>
+      <div class="field-row">
+        <label>Token</label>
+        <input id="contentApiToken" type="text" placeholder="可选；将以 ?token= 与 Authorization 头附带" />
+      </div>
+      <div class="actions">
+        <button id="btnSaveContentApi" class="btn primary">保存正文源设置</button>
+        <button id="btnTestContentApi" class="btn">测试正文源</button>
+        <span id="contentApiStatus" class="search-status"></span>
+      </div>
+    </section>
+
+    <section id="bookCard" class="card hidden">
+      <div class="book-head">
+        <div class="book-meta">
+          <h2 id="bookName">—</h2>
+          <div class="tags">
+            <span id="bookAuthor" class="tag">作者：—</span>
+            <span id="bookCategory" class="tag">分类：—</span>
+            <span id="bookChapters" class="tag">章数：—</span>
+            <span id="bookWords" class="tag">字数：—</span>
+            <span id="bookStatus" class="tag">状态：—</span>
+          </div>
+          <p id="bookDesc" class="desc">—</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="field-row">
+        <label>保存目录</label>
+        <input id="outDir" type="text" readonly />
+        <button id="btnChooseDir" class="btn">选择…</button>
+      </div>
+      <div class="field-row">
+        <label>章节范围</label>
+        <span class="range-label">从第</span>
+        <input id="startChapter" type="number" min="1" step="1" placeholder="1" class="num-input" />
+        <span class="range-label">章，到第</span>
+        <input id="endChapter" type="number" min="1" step="1" placeholder="最后一章" class="num-input" />
+        <span class="range-label">章</span>
+        <span class="hint" style="margin-left:10px">留空 = 从第 1 章到最后一章；付费/锁定章节在配置正文源后优先走正文源，未命中则跳过</span>
+      </div>
+      <div class="actions">
+        <button id="btnDownload" class="btn primary" disabled>开始下载</button>
+        <button id="btnCancel" class="btn danger hidden">取消</button>
+        <button id="btnOpenDir" class="btn hidden">打开所在文件夹</button>
+      </div>
+      <div id="progressWrap" class="hidden">
+        <div class="progress-bar"><div id="progressFill"></div></div>
+        <div id="progressText" class="progress-text">准备中…</div>
+      </div>
+      <div id="result" class="result hidden"></div>
+    </section>
+
+    <section class="card">
+      <div class="section-head">
+        <h3>已下载书籍</h3>
+        <button id="btnRefreshList" class="btn">刷新</button>
+      </div>
+      <div class="book-dir-row">
+        <span class="range-label">查找目录</span>
+        <input id="lookupDir" type="text" readonly placeholder="默认：保存目录" />
+        <button id="btnChooseLookupDir" class="btn">选择…</button>
+      </div>
+      <ul id="bookList" class="book-list"></ul>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
