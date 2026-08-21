@@ -1,6 +1,7 @@
 # 全网小说下载器 + 阅读器
 
-[简体中文](README.md) · [English](README.en.md)
+<details open>
+<summary>简体中文 / 中文版</summary>
 
 一个 Windows Electron 桌面应用：按书名搜索全网小说结果，载入书籍目录页，下载公开可见章节为 UTF-8 TXT，并用内置阅读器阅读。
 
@@ -71,3 +72,14 @@ build/icon-source.jpg           用户指定的应用图标源图
 ## 合规提示
 
 本工具仅用于个人学习、研究，以及备份自己有权访问的公开内容。请遵守目标网站服务条款和相关法律法规，尊重作者版权，支持正版；请勿用于商业用途或大规模批量抓取。
+
+</details>
+
+<details>
+<summary>English / English version</summary>
+
+Web Novel Downloader + Reader is a Windows Electron app for searching novel titles, loading public chapter indexes, downloading accessible chapters as UTF-8 TXT, and reading them locally. It supports generic web parsing, chapter ranges, rate limiting, TXT export, themes, progress, and natural full-width layout. It does not bypass login, payment, CAPTCHA, or access controls.
+
+Download the Windows x64 installer or portable edition from the [v2.1.1 GitHub Release](https://github.com/zlzlyt1/web-novel-downloader/releases/tag/v2.1.1). See `README.en.md` in the repository for the full standalone English document.
+
+</details>
