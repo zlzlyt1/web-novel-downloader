@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const { Downloader, getBookFromUrl } = require('./src/crawler/downloader');
 const { saveTxt } = require('./src/crawler/txt');
+const { loadLibraryMeta, saveLibraryMeta, createLibraryMeta, appendTxtChapters, mergeNewChapters } = require('./src/crawler/library');
 const { searchBooks } = require('./src/search/web-search');
 
 const APP_ID = 'com.zhangluyintao.web-novel-downloader';
@@ -234,6 +235,7 @@ ipcMain.handle('crawl:start', async (event, { url, outDir, startChapter, endChap
   try {
     const { book, chapters, failed } = await activeDownloader.download(url);
     const filePath = saveTxt(book, chapters, outDir || defaultOutDir());
+    saveLibraryMeta(filePath, createLibraryMeta(filePath, url, book, chapters));
     const residual = chapters.reduce((n, c) => n + (c.residual || 0), 0);
     return { ok: true, book, chapterCount: chapters.length, failedCount: failed.length, residual, filePath };
   } catch (e) {
@@ -295,6 +297,67 @@ ipcMain.handle('reader:setFile', (event, filePath) => {
   currentReaderFile = filePath;
   saveReaderState();
   return true;
+});
+
+// 阅读器增量更新：读取下载时保存的来源与章节标识，只追加目录中新增的章节。
+function countTxtChapters(filePath) {
+  try {
+    return (fs.readFileSync(filePath, 'utf8').match(/^第\s*[0-9一二三四五六七八九十百千万零]+\s*[章节回]/gm) || []).length;
+  } catch (_) { return 0; }
+}
+
+ipcMain.handle('reader:update', async (event, { filePath, sourceUrl } = {}) => {
+  if (!filePath || !/\.txt$/i.test(filePath)) return { ok: false, error: '仅支持更新由本应用下载的 TXT 书籍' };
+  if (!fs.existsSync(filePath)) return { ok: false, error: '书籍文件不存在或已被移动' };
+  let meta = loadLibraryMeta(filePath);
+  let migrated = false;
+  if (!meta?.sourceUrl && !String(sourceUrl || '').trim()) {
+    return { ok: false, needsSource: true, error: '此书没有下载来源记录' };
+  }
+  if (!meta?.sourceUrl) {
+    try {
+      const { HttpClient } = require('./src/crawler/http');
+      const sourceBook = await getBookFromUrl(String(sourceUrl).trim(), new HttpClient({ cacheDir: path.join(app.getPath('userData'), 'cache') }));
+      const existingCount = countTxtChapters(filePath);
+      if (!existingCount) return { ok: false, error: '未能从此 TXT 识别章节标题，无法安全迁移更新记录' };
+      meta = createLibraryMeta(filePath, String(sourceUrl).trim(), sourceBook, sourceBook.chapters.slice(0, existingCount));
+      migrated = true;
+    } catch (e) {
+      return { ok: false, error: `无法识别来源目录：${e.message || String(e)}` };
+    }
+  }
+  if (activeDownloader) return { ok: false, error: '已有下载任务正在进行，请稍后再试' };
+
+  cancelFlag = false;
+  const settings = getSettings();
+  activeDownloader = new Downloader({
+    minInterval: 700,
+    contentApiUrl: settings.contentApiUrl || '',
+    contentApiToken: settings.contentApiToken || '',
+    cacheDir: path.join(app.getPath('userData'), 'cache'),
+    onProgress: (progress) => {
+      if (event.sender && !event.sender.isDestroyed()) event.sender.send('reader:updateProgress', progress);
+    },
+    isCancelled: () => cancelFlag,
+  });
+  try {
+    const existingKeys = (meta.chapters || []).map((chapter) => chapter.key).filter(Boolean);
+    const { book, chapters, failed } = await activeDownloader.downloadNew(meta.sourceUrl, existingKeys);
+    if (!chapters.length) {
+      if (migrated) saveLibraryMeta(filePath, meta);
+      return { ok: true, added: 0, failed: 0, message: '已是最新章节', migrated };
+    }
+    const lastVolume = appendTxtChapters(filePath, chapters, meta.lastVolume || '');
+    const nextMeta = mergeNewChapters(meta, chapters);
+    nextMeta.bookName = book.bookName || meta.bookName || '';
+    nextMeta.lastVolume = lastVolume;
+    saveLibraryMeta(filePath, nextMeta);
+    return { ok: true, added: chapters.length, failed: failed.length, migrated, message: `已追加 ${chapters.length} 个新章节` };
+  } catch (e) {
+    return { ok: false, error: e.message || String(e) };
+  } finally {
+    activeDownloader = null;
+  }
 });
 
 // 构建中文应用菜单（替换默认的英文 File/Edit/View 菜单）。

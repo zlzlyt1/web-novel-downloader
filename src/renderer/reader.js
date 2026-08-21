@@ -286,6 +286,34 @@ async function loadFile(filePath, silent = false) {
   const start = (typeof saved.chapter === 'number' && saved.chapter < book.chapters.length) ? saved.chapter : 0;
   renderChapter(start);
   window.api.setReaderFile(filePath);
+  $('btnUpdate').disabled = isMarkdown;
+  $('btnUpdate').title = isMarkdown ? 'Markdown 文件不支持章节更新' : '检查并仅下载新章节';
+}
+
+async function updateBook() {
+  if (!currentFile) return alert('请先打开一本由本应用下载的 TXT 书籍');
+  if (isMarkdown) return alert('Markdown 文件不支持章节更新');
+  const button = $('btnUpdate');
+  button.disabled = true;
+  const originalText = button.textContent;
+  button.textContent = '检查中…';
+  try {
+    let result = await window.api.updateReaderBook({ filePath: currentFile });
+    if (result.needsSource) {
+      const sourceUrl = prompt('这是旧版下载的书，请粘贴它的书籍目录页链接。\n系统会按当前 TXT 已有章节数保留旧内容，并只追加后续章节：');
+      if (!sourceUrl || !sourceUrl.trim()) return;
+      result = await window.api.updateReaderBook({ filePath: currentFile, sourceUrl: sourceUrl.trim() });
+    }
+    if (!result.ok) return alert('更新失败：' + (result.error || '未知错误'));
+    if (!result.added) return alert(result.message || '已是最新章节');
+    const previousChapter = currentChapter;
+    await loadFile(currentFile, true);
+    if (previousChapter >= 0 && previousChapter < book.chapters.length) gotoChapter(previousChapter);
+    alert(`${result.migrated ? '已建立更新记录，' : ''}${result.message}${result.failed ? `，失败 ${result.failed} 章已保留占位` : ''}`);
+  } finally {
+    button.disabled = isMarkdown;
+    button.textContent = originalText;
+  }
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
@@ -296,6 +324,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   $('btnPrev').addEventListener('click', () => gotoChapter(currentChapter - 1));
   $('btnNext').addEventListener('click', () => gotoChapter(currentChapter + 1));
   $('btnTheme').addEventListener('click', cycleTheme);
+  $('btnUpdate').addEventListener('click', updateBook);
   $('btnType').addEventListener('click', toggleTypePanel);
   $('tpFontDec').addEventListener('click', () => adjustFont(-1));
   $('tpFontInc').addEventListener('click', () => adjustFont(1));
@@ -315,6 +344,11 @@ window.addEventListener('DOMContentLoaded', async () => {
   $('btnOpen').addEventListener('click', async () => {
     const f = await window.api.chooseFile();
     if (f) loadFile(f);
+  });
+  window.api.onReaderUpdateProgress((progress) => {
+    if (!$('btnUpdate').disabled) return;
+    if (progress.stage === 'chapter') $('btnUpdate').textContent = `${progress.done || 0}/${progress.total || 0}`;
+    else if (progress.stage === 'book') $('btnUpdate').textContent = '检查中…';
   });
 
   // 键盘翻页/翻章

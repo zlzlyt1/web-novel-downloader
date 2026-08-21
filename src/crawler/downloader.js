@@ -10,6 +10,11 @@ function isFanqieUrl(rawUrl) {
   } catch (_) { return false; }
 }
 
+// 用稳定的站点章节标识去重：番茄用 itemId，通用站点用章节 URL。
+function chapterKey(chapter) {
+  return String(chapter?.itemId || chapter?.url || '').trim();
+}
+
 async function getBookFromUrl(url, http) {
   if (!isFanqieUrl(url)) return generic.getBook(url, http);
   const bookId = await fanqie.resolveBookId(url, http);
@@ -56,23 +61,47 @@ class Downloader {
     this._report({ stage: 'book', bookName: book.bookName, message: `已获取《${book.bookName}》，共 ${book.chapters.length} 章` });
 
     const len = book.chapters.length;
-    const startIdx = Math.max(0, Math.min((this.startChapter || 1) - 1, len - 1));
-    const endIdx = this.endChapter ? Math.max(startIdx + 1, Math.min(this.endChapter, len)) : len;
-    const total = Math.max(0, endIdx - startIdx);
+    const startIdx = len ? Math.max(0, Math.min((this.startChapter || 1) - 1, len - 1)) : 0;
+    const endIdx = this.endChapter ? Math.max(startIdx, Math.min(this.endChapter, len)) : len;
+    return this._downloadMetas(book, useFanqie, book.chapters.slice(startIdx, endIdx));
+  }
+
+  /**
+   * 仅下载目录中尚未保存过的章节。已有章节保持原文件内容不动。
+   * @param {string} url 书籍目录页 URL
+   * @param {Iterable<string>} existingKeys 已保存的章节 itemId / URL
+   */
+  async downloadNew(url, existingKeys = []) {
+    this._report({ stage: 'book', message: '正在检查书籍更新…' });
+    const useFanqie = isFanqieUrl(url);
+    const book = await getBookFromUrl(url, this.http);
+    const seen = new Set(Array.from(existingKeys, (key) => String(key || '').trim()).filter(Boolean));
+    const metas = book.chapters.filter((chapter) => {
+      const key = chapterKey(chapter);
+      return key && !seen.has(key);
+    });
+    this._report({
+      stage: 'book',
+      bookName: book.bookName,
+      message: metas.length ? `发现 ${metas.length} 个新章节，准备下载…` : `《${book.bookName}》已是最新`,
+    });
+    return this._downloadMetas(book, useFanqie, metas);
+  }
+
+  async _downloadMetas(book, useFanqie, metas) {
+    const total = metas.length;
 
     // 番茄 + 配置了正文源：先批量预拉取正文（含付费/锁定章节）。
     let batchMap = {};
-    if (useFanqie && this.contentApiUrl) {
-      batchMap = await this._fetchBatch(book, startIdx, endIdx);
-    }
+    if (useFanqie && this.contentApiUrl && metas.length) batchMap = await this._fetchBatch(metas, book);
 
     const chapters = [];
     const failed = [];
 
-    for (let i = startIdx; i < endIdx; i++) {
+    for (let i = 0; i < metas.length; i++) {
       if (this.isCancelled()) throw new Error('已取消');
-      const meta = book.chapters[i];
-      const done = i - startIdx + 1;
+      const meta = metas[i];
+      const done = i + 1;
 
       // 1) 正文源命中（含付费/锁定章节）→ 直接采用
       const batch = batchMap[meta.itemId];
@@ -105,13 +134,12 @@ class Downloader {
       }
     }
 
-    return { book, chapters, failed };
+    return { book, chapters, failed, newChapterCount: chapters.length };
   }
 
   // 通过正文源批量预拉取章节正文；单批失败不中断，返回已命中的部分，未命中章节回退网页。
-  async _fetchBatch(book, startIdx, endIdx) {
-    const ids = [];
-    for (let i = startIdx; i < endIdx; i++) ids.push(String(book.chapters[i].itemId));
+  async _fetchBatch(metas, book) {
+    const ids = metas.map((chapter) => String(chapter.itemId)).filter(Boolean);
     const total = ids.length;
     const BATCH_SIZE = 20;
     const map = {};
@@ -130,4 +158,4 @@ class Downloader {
   }
 }
 
-module.exports = { Downloader, isFanqieUrl, getBookFromUrl };
+module.exports = { Downloader, isFanqieUrl, getBookFromUrl, chapterKey };

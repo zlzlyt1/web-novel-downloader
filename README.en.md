@@ -12,14 +12,15 @@ A Windows Electron desktop app that searches novel titles across the web, loads 
 - Dedicated adapter for Fanqie public book/reading pages and text decoding.
 - Skips paid or locked chapters; does not bypass login, payment, CAPTCHA, or access controls.
 - Built-in reader with table of contents, font size, line height, paragraph spacing, themes, progress, and balanced/full-width layout modes.
+- Reader updates that preserve existing text and append only newly discovered chapters. Older TXT files can be migrated by supplying the book index URL once.
 - Open local TXT or Markdown files.
 
 ## Download
 
-Windows x64 packages are attached to the [v2.1.1 GitHub Release](https://github.com/zlzlyt1/web-novel-downloader/releases/tag/v2.1.1):
+Windows x64 2.1.2 packages are built in `release/`:
 
-- `全网小说下载器 Setup 2.1.1.exe` — installer.
-- `全网小说下载器 2.1.1.exe` — portable edition.
+- `全网小说下载器 Setup 2.1.2.exe` — installer.
+- `全网小说下载器 2.1.2.exe` — portable edition.
 
 See [`release/README.md`](release/README.md) or [`release/README.en.md`](release/README.en.md) for release notes and verification files.
 
@@ -48,6 +49,7 @@ npm run optimize -- "E:\path\novel.txt"
 2. Click “载入下载器” (Load downloader) beside a result, or paste a book index URL.
 3. Choose the output directory and chapter range, then start the download.
 4. Read the exported file in the app or open its folder.
+5. In the reader, click “更新” (Update) to append only new chapters. For an older TXT without source metadata, paste its book index URL once when prompted.
 
 ## Compliance
 
