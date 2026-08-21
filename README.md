@@ -1,7 +1,8 @@
 # 全网小说下载器 + 阅读器
 
-<details open>
-<summary>简体中文 / 中文版</summary>
+语言切换： [简体中文](#简体中文) · [English](#english)
+
+## 简体中文
 
 一个 Windows Electron 桌面应用：按书名搜索全网小说结果，载入书籍目录页，下载公开可见章节为 UTF-8 TXT，并用内置阅读器阅读。
 
@@ -78,13 +79,41 @@ build/icon-source.jpg           用户指定的应用图标源图
 
 本工具仅用于个人学习、研究，以及备份自己有权访问的公开内容。请遵守目标网站服务条款和相关法律法规，尊重作者版权，支持正版；请勿用于商业用途或大规模批量抓取。
 
-</details>
+## English
 
-<details>
-<summary>English / English version</summary>
+Web Novel Downloader + Reader is a Windows Electron desktop app that searches novel titles across the web, loads public chapter indexes, downloads accessible chapters as UTF-8 TXT, and reads them locally.
 
-Web Novel Downloader + Reader is a Windows Electron app for searching novel titles, loading public chapter indexes, downloading accessible chapters as UTF-8 TXT, and reading them locally. It supports generic web parsing, chapter ranges, rate limiting, TXT export, themes, progress, and natural full-width layout. It does not bypass login, payment, CAPTCHA, or access controls.
+### Features
 
-Download the Windows x64 installer or portable edition from the [v2.1.1 GitHub Release](https://github.com/zlzlyt1/web-novel-downloader/releases/tag/v2.1.1). See `README.en.md` in the repository for the full standalone English document.
+- Search by full title across multiple novel websites.
+- Load HTTP/HTTPS results and attempt to detect public chapter indexes.
+- Generic parser for chapter links and article text, with chapter ranges, rate limiting, failed-chapter placeholders, and TXT export.
+- Dedicated Fanqie adapter for public book/reading pages and text decoding.
+- Does not bypass login, payment, CAPTCHA, or access controls.
+- Built-in reader with table of contents, themes, progress, typography controls, and natural full-width layout.
+- Persistent bookshelf for opened TXT/Markdown files; remove a shelf record without deleting the local file.
+- Incremental updates preserve existing chapters and append only newly discovered chapters.
+- Re-downloading the same book automatically deduplicates by stable chapter ID or URL.
 
-</details>
+### Download and build
+
+Windows x64 2.1.5 packages are built in `release/`:
+
+- `全网小说下载器 Setup 2.1.5.exe` — installer.
+- `全网小说下载器 2.1.5.exe` — portable edition.
+
+```powershell
+npm start
+npm run dist
+```
+
+### Usage
+
+1. Enter a complete title and click “搜索网络” (Search the web).
+2. Load a result or paste a book index URL.
+3. Choose an output directory and chapter range, then start downloading.
+4. Open the TXT in the reader; use “更新” to append new chapters and “书架” to manage opened books.
+
+### Compliance
+
+For personal learning, research, and backup of content you are authorized to access only. Follow each website’s terms and applicable laws, respect copyright, and do not use this project for commercial or large-scale scraping.
