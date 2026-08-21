@@ -3,7 +3,7 @@
 <details open>
 <summary>简体中文 / 中文版</summary>
 
-当前稳定版本：**2.1.4**
+当前稳定版本：**2.1.5**
 
 安装版和便携版 EXE 请从 GitHub Releases 下载：
 

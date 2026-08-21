@@ -19,10 +19,10 @@ A Windows Electron desktop app that searches novel titles across the web, loads 
 
 ## Download
 
-Windows x64 2.1.4 packages are built in `release/`:
+Windows x64 2.1.5 packages are built in `release/`:
 
-- `全网小说下载器 Setup 2.1.4.exe` — installer.
-- `全网小说下载器 2.1.4.exe` — portable edition.
+- `全网小说下载器 Setup 2.1.5.exe` — installer.
+- `全网小说下载器 2.1.5.exe` — portable edition.
 
 See [`release/README.md`](release/README.md) or [`release/README.en.md`](release/README.en.md) for release notes and verification files.
 

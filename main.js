@@ -165,6 +165,7 @@ function createMainWindow() {
       sandbox: false,
     },
   });
+  attachEditableContextMenu(mainWindow);
   mainWindow.loadFile(path.join(__dirname, 'src', 'renderer', 'index.html'));
   mainWindow.on('closed', () => { mainWindow = null; });
 }
@@ -191,9 +192,29 @@ function createReaderWindow() {
       sandbox: false,
     },
   });
+  attachEditableContextMenu(readerWindow);
   readerWindow.loadFile(path.join(__dirname, 'src', 'renderer', 'reader.html'));
   readerWindow.on('closed', () => { readerWindow = null; });
   return readerWindow;
+}
+
+// Electron 自定义应用菜单后，输入框不会自动显示 Chromium 默认右键菜单；
+// 为可编辑元素补回常用的文本编辑操作。
+function attachEditableContextMenu(window) {
+  window.webContents.on('context-menu', (event, params) => {
+    if (!params.isEditable) return;
+    event.preventDefault();
+    const menu = Menu.buildFromTemplate([
+      { role: 'undo', label: '撤销' },
+      { role: 'redo', label: '重做' },
+      { type: 'separator' },
+      { role: 'cut', label: '剪切' },
+      { role: 'copy', label: '复制' },
+      { role: 'paste', label: '粘贴' },
+      { role: 'selectAll', label: '全选' },
+    ]);
+    menu.popup({ window });
+  });
 }
 
 // ---- IPC ----

@@ -33,10 +33,10 @@ npm start
 npm run dist
 ```
 
-Windows x64 2.1.4 构建产物位于 `release/`：
+Windows x64 2.1.5 构建产物位于 `release/`：
 
-- `全网小说下载器 Setup 2.1.4.exe`：安装版
-- `全网小说下载器 2.1.4.exe`：免安装便携版
+- `全网小说下载器 Setup 2.1.5.exe`：安装版
+- `全网小说下载器 2.1.5.exe`：免安装便携版
 
 也可以使用命令行：
 
