@@ -9,6 +9,7 @@ let sourceFormat = 'txt';
 let sidebarMode = 'toc';
 let removeBookResolver = null;
 let scrollSaveTimer = null;
+let wheelPageLocked = false;
 let pageControlsTimer = null;
 let pageAnimationTimer = null;
 let pageAnimationRunning = false;
@@ -526,6 +527,9 @@ function getReadingMode(settings = getSettings()) {
 function showSidePageButtons(settings = getSettings()) {
   return settings.sidePageButtons !== false;
 }
+function usePagedWheel(settings = getSettings()) {
+  return settings.pagedWheelTurns === true;
+}
 
 function updatePageTurnControls(show = false) {
   const controls = $('pageTurnControls');
@@ -732,6 +736,13 @@ function toggleSidePageButtons() {
   saveSettings(s);
 }
 
+function togglePagedWheel() {
+  const s = getSettings();
+  s.pagedWheelTurns = !usePagedWheel(s);
+  applySettings(s);
+  saveSettings(s);
+}
+
 function cyclePageAnimation() {
   const s = getSettings();
   const current = PAGE_ANIMATIONS.includes(s.pageAnimation) ? s.pageAnimation : 'sink';
@@ -752,6 +763,9 @@ function refreshTypePanel(settings) {
   const sideButtonsVisible = showSidePageButtons(s);
   $('tpSidePageButtons').textContent = sideButtonsVisible ? '显示' : '隐藏';
   $('tpSidePageButtons').dataset.mode = sideButtonsVisible ? 'optimized' : 'off';
+  const pagedWheelEnabled = usePagedWheel(s);
+  $('tpPagedWheel').textContent = pagedWheelEnabled ? '开启' : '关闭';
+  $('tpPagedWheel').dataset.mode = pagedWheelEnabled ? 'optimized' : 'off';
   const pageAnimation = PAGE_ANIMATIONS.includes(s.pageAnimation) ? s.pageAnimation : 'sink';
   $('tpPageAnimation').textContent = PAGE_ANIMATION_LABELS[pageAnimation];
   $('tpPageAnimation').dataset.mode = pageAnimation === 'off' ? 'off' : 'optimized';
@@ -862,6 +876,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   $('tpMarginInc').addEventListener('click', () => adjustMargin(4));
   $('tpParagraphMode').addEventListener('click', cycleParagraphMode);
   $('tpSidePageButtons').addEventListener('click', toggleSidePageButtons);
+  $('tpPagedWheel').addEventListener('click', togglePagedWheel);
   $('tpPageAnimation').addEventListener('click', cyclePageAnimation);
   $('tpPrevPageKey').addEventListener('click', () => beginKeyCapture('prevPageKey'));
   $('tpNextPageKey').addEventListener('click', () => beginKeyCapture('nextPageKey'));
@@ -903,6 +918,16 @@ window.addEventListener('DOMContentLoaded', async () => {
       saveProgress();
     }, 450);
   });
+  $('content').addEventListener('wheel', (event) => {
+    if (getReadingMode() !== 'paged' || !usePagedWheel() || event.ctrlKey) return;
+    const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+    if (Math.abs(delta) < 8) return;
+    event.preventDefault();
+    if (wheelPageLocked) return;
+    wheelPageLocked = true;
+    turnPage(delta > 0 ? 1 : -1);
+    setTimeout(() => { wheelPageLocked = false; }, 520);
+  }, { passive: false });
   window.addEventListener('beforeunload', saveProgress);
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') saveProgress();
