@@ -1,14 +1,17 @@
-Web Novel Downloader 2.3.8 (Windows x64)
+Web Novel Downloader 2.3.9 (Windows x64)
 
 Files
-1. 全网小说下载器 Setup 2.3.8.exe
+1. 全网小说下载器 Setup 2.3.9.exe
    Installer. Choose an installation directory and create desktop/Start Menu shortcuts.
 
-2. 全网小说下载器 2.3.8.exe
+2. 全网小说下载器 2.3.9.exe
    Portable edition. No installation is required; double-click to run.
 
 Verification
 Use SHA256SUMS.txt in this folder to verify downloaded files.
+
+2.3.9 fix
+When page animation is disabled, wheel page turns are no longer throttled. Animated modes keep their input lock to prevent overlapping transitions.
 
 2.3.8 feature
 Typography/page-key settings now include an optional wheel-page-turn switch, disabled by default. When enabled, vertical or horizontal wheel input turns one horizontal page at a time without affecting settings-panel scrolling.
