@@ -546,20 +546,18 @@ function saveSettings(s) {
 
 function themePalette(settings, theme) {
   const stored = settings.themeColors?.[theme] || {};
-  // 兼容 2.2.7 已保存的 accent 字段；新设置统一称为“功能颜色”。
-  return { ...THEME_PALETTE_DEFAULTS[theme], ...stored, function: stored.function || stored.accent || THEME_PALETTE_DEFAULTS[theme].function };
+  // 兼容旧版 accent 字段；外框和填充恢复由主题本身决定，不再提供自定义项。
+  return { ...THEME_PALETTE_DEFAULTS[theme], function: stored.function || stored.accent || THEME_PALETTE_DEFAULTS[theme].function };
 }
 
 function applyThemePalette(settings, theme) {
   const palette = themePalette(settings, theme);
   const root = document.documentElement.style;
-  root.setProperty('--control-border', palette.border);
-  root.setProperty('--control-fill', palette.fill);
+  root.setProperty('--control-border', THEME_PALETTE_DEFAULTS[theme].border);
+  root.setProperty('--control-fill', THEME_PALETTE_DEFAULTS[theme].fill);
   root.setProperty('--function-color', palette.function);
   root.setProperty('--accent', palette.function);
   $('btnTheme').querySelector('strong').textContent = THEME_LABELS[theme];
-  $('themeBorderColor').value = palette.border;
-  $('themeFillColor').value = palette.fill;
   $('themeAccentColor').value = palette.function;
   document.querySelectorAll('[data-theme-choice]').forEach((button) => {
     button.classList.toggle('selected', button.dataset.themeChoice === theme);
@@ -741,8 +739,6 @@ window.addEventListener('DOMContentLoaded', async () => {
   document.querySelectorAll('[data-theme-choice]').forEach((button) => {
     button.addEventListener('click', () => selectTheme(button.dataset.themeChoice));
   });
-  $('themeBorderColor').addEventListener('input', (event) => updateThemeColor('border', event.target.value));
-  $('themeFillColor').addEventListener('input', (event) => updateThemeColor('fill', event.target.value));
   $('themeAccentColor').addEventListener('input', (event) => updateThemeColor('function', event.target.value));
   $('btnResetThemeColors').addEventListener('click', resetThemeColors);
   $('btnReadingMode').addEventListener('click', cycleReadingMode);

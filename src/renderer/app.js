@@ -23,8 +23,8 @@ function applyControlPalette(theme) {
   const fallback = DOWNLOADER_PALETTE_DEFAULTS[theme] || DOWNLOADER_PALETTE_DEFAULTS.light;
   const functionColor = stored.function || stored.accent || fallback.function;
   const root = document.documentElement.style;
-  root.setProperty('--control-border', stored.border || fallback.border);
-  root.setProperty('--control-fill', stored.fill || fallback.fill);
+  root.setProperty('--control-border', fallback.border);
+  root.setProperty('--control-fill', fallback.fill);
   root.setProperty('--function-color', functionColor);
   root.setProperty('--primary', functionColor);
   root.setProperty('--primary-dark', `color-mix(in srgb, ${functionColor} 84%, #000)`);

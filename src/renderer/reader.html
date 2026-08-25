@@ -31,14 +31,12 @@
           <button class="theme-choice" data-theme-choice="dark">深色</button>
         </div>
         <div class="theme-color-grid">
-          <label class="theme-color-field">控件外框<input id="themeBorderColor" type="color" aria-label="控件外框颜色" /></label>
-          <label class="theme-color-field">控件填充<input id="themeFillColor" type="color" aria-label="控件填充颜色" /></label>
           <label class="theme-color-field">功能颜色<input id="themeAccentColor" type="color" aria-label="功能颜色" /></label>
         </div>
         <button id="btnResetThemeColors" class="theme-reset-btn">恢复本主题默认配色</button>
       </div>
       <button id="btnTypographySettings" class="settings-section-toggle" aria-expanded="false">
-        <span>排版与翻页按键</span><span class="settings-chevron">⌄</span>
+        <span>排版与翻页按键</span><span class="settings-chevron" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 9 7 7 7-7" /></svg></span>
       </button>
       <div id="typePanel" class="type-panel">
         <div class="tp-row">
