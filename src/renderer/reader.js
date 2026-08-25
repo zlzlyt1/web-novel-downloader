@@ -179,11 +179,21 @@ function runCustomBinding(binding) {
   const settings = getSettings();
   if (binding === settingPageKey(settings, 'prevPageKey')) { turnPage(-1); return true; }
   if (binding === settingPageKey(settings, 'nextPageKey')) { turnPage(1); return true; }
-  if (binding === settingPageKey(settings, 'prevChapterKey')) { gotoChapter(currentChapter - 1); return true; }
-  if (binding === settingPageKey(settings, 'nextChapterKey')) { gotoChapter(currentChapter + 1); return true; }
+  if (binding === settingPageKey(settings, 'prevChapterKey')) { turnChapter(-1); return true; }
+  if (binding === settingPageKey(settings, 'nextChapterKey')) { turnChapter(1); return true; }
   if (binding === settingPageKey(settings, 'fontIncreaseKey')) { adjustFont(1); return true; }
   if (binding === settingPageKey(settings, 'fontDecreaseKey')) { adjustFont(-1); return true; }
   return false;
+}
+
+function turnChapter(direction) {
+  const targetChapter = currentChapter + direction;
+  if (targetChapter < 0 || targetChapter >= book.chapters.length) return;
+  if (getReadingMode() === 'paged') {
+    playPageTurnAnimation(direction, () => gotoChapter(targetChapter));
+    return;
+  }
+  gotoChapter(targetChapter);
 }
 
 function turnPage(direction) {
@@ -825,8 +835,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   $('btnToc').addEventListener('click', toggleToc);
   $('btnShelf').addEventListener('click', openShelf);
   $('overlay').addEventListener('click', closeToc);
-  $('btnPrev').addEventListener('click', () => gotoChapter(currentChapter - 1));
-  $('btnNext').addEventListener('click', () => gotoChapter(currentChapter + 1));
+  $('btnPrev').addEventListener('click', () => turnChapter(-1));
+  $('btnNext').addEventListener('click', () => turnChapter(1));
   $('btnPagePrev').addEventListener('click', () => turnPage(-1));
   $('btnPageNext').addEventListener('click', () => turnPage(1));
   $('btnTheme').addEventListener('click', toggleThemePanel);
@@ -926,12 +936,12 @@ window.addEventListener('DOMContentLoaded', async () => {
     // 左右方向键保留原有的章节切换；“左右”指横向书页布局，而非固定按键。
     if (e.key === 'ArrowLeft') {
       e.preventDefault();
-      gotoChapter(currentChapter - 1);
+      turnChapter(-1);
       return;
     }
     if (e.key === 'ArrowRight') {
       e.preventDefault();
-      gotoChapter(currentChapter + 1);
+      turnChapter(1);
       return;
     }
   });

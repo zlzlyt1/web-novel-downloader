@@ -4,7 +4,7 @@
 
 ## 简体中文
 
-当前稳定版本：**2.3.4**
+当前稳定版本：**2.3.5**
 
 安装版和便携版 EXE 请从 GitHub Releases 下载：
 
@@ -14,4 +14,4 @@
 
 ## English
 
-Download the Windows x64 installer and portable edition from [GitHub Releases](https://github.com/zlzlyt1/web-novel-downloader/releases). The installer creates shortcuts; the portable edition needs no installation. `SHA256SUMS.txt` verifies file integrity. Version 2.3.4 keeps both nonlinear page animations and lets the reader switch between sinking entrance and inertial sliding.
+Download the Windows x64 installer and portable edition from [GitHub Releases](https://github.com/zlzlyt1/web-novel-downloader/releases). The installer creates shortcuts; the portable edition needs no installation. `SHA256SUMS.txt` verifies file integrity. Version 2.3.5 routes keyboard and chapter navigation through the selected page animation and makes the settings panel scroll within the window height.

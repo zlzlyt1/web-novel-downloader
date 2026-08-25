@@ -307,7 +307,8 @@ body[data-page-animation="slide"] .page-flow.page-enter-prev { animation: page-s
   transition: max-height .3s ease, padding .3s ease, opacity .2s ease, transform .3s ease;
 }
 .settings-panel.open {
-  max-height: 820px; padding: 12px 14px; opacity: 1; pointer-events: auto;
+  max-height: calc(100vh - var(--topbar-h) - 22px); overflow-y: auto; overscroll-behavior: contain;
+  padding: 12px 14px; opacity: 1; pointer-events: auto;
   transform: translateY(0) scale(1);
 }
 .settings-actions { display: grid; gap: 7px; }
