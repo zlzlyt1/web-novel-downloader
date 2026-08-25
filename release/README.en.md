@@ -2,7 +2,7 @@
 
 Language: [简体中文](README.md) · [English](README.en.md)
 
-Current stable version: **2.2.0**
+Current stable version: **2.2.1**
 
 Download the Windows x64 installer and portable executable from [GitHub Releases](https://github.com/zlzlyt1/web-novel-downloader/releases).
 
@@ -10,8 +10,14 @@ The repository keeps installation instructions and SHA-256 checksums. See the ro
 
 ## Included packages
 
-- `全网小说下载器 Setup 2.2.0.exe` — installer with desktop and Start Menu shortcuts.
-- `全网小说下载器 2.2.0.exe` — portable edition; no installation required.
+- `全网小说下载器 Setup 2.2.1.exe` — installer with desktop and Start Menu shortcuts.
+- `全网小说下载器 2.2.1.exe` — portable edition; no installation required.
+
+## 2.2.1 durable reading progress
+
+- Stores the current chapter and in-chapter scroll position in AppData instead of relying only on page local storage.
+- Restores progress after long closures, portable-app restarts, and version upgrades.
+- Migrates existing local-storage progress when available.
 
 ## 2.2.0 EPUB reading and format conversion
 

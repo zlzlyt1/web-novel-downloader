@@ -1,14 +1,17 @@
-Web Novel Downloader 2.2.0 (Windows x64)
+Web Novel Downloader 2.2.1 (Windows x64)
 
 Files
-1. 全网小说下载器 Setup 2.2.0.exe
+1. 全网小说下载器 Setup 2.2.1.exe
    Installer. Choose an installation directory and create desktop/Start Menu shortcuts.
 
-2. 全网小说下载器 2.2.0.exe
+2. 全网小说下载器 2.2.1.exe
    Portable edition. No installation is required; double-click to run.
 
 Verification
 Use SHA256SUMS.txt in this folder to verify downloaded files.
+
+2.2.1 fix
+Reading progress now stores the current chapter and in-chapter scroll position in AppData and survives portable-app restarts and upgrades. Existing local-storage progress is migrated when available.
 
 2.2.0 feature
 The reader opens EPUB, Markdown, and TXT books and converts the current book to either of the other formats while preserving its title, chapters, and text.

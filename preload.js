@@ -40,6 +40,8 @@ contextBridge.exposeInMainWorld('api', {
   // 阅读器
   openReader: (filePath) => ipcRenderer.invoke('reader:open', filePath),
   getReaderFile: () => ipcRenderer.invoke('reader:getFile'),
+  getReaderProgress: (filePath) => ipcRenderer.invoke('reader:getProgress', filePath),
+  saveReaderProgress: (payload) => ipcRenderer.send('reader:setProgress', payload),
   setReaderFile: (p) => ipcRenderer.invoke('reader:setFile', p),
   touchReaderBook: (book) => ipcRenderer.invoke('reader:touchBook', book),
   getReaderBooks: () => ipcRenderer.invoke('reader:listBooks'),

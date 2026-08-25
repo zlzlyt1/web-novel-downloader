@@ -18,24 +18,55 @@ let activeDownloader = null;
 let cancelFlag = false;
 let currentReaderFile = null;
 let readerBooks = [];
+let readerProgress = {};
+let readerStateSaveTimer = null;
 let currentTheme = 'light'; // 'light' | 'dark'
 
 // 阅读器状态持久化（记住上次打开的书籍），跨启动保存到 userData。
 function readerStateFile() {
   return path.join(app.getPath('userData'), 'reader-state.json');
 }
+function readerProgressKey(filePath) {
+  if (!filePath || typeof filePath !== 'string') return '';
+  const resolved = path.resolve(filePath);
+  return process.platform === 'win32' ? resolved.toLocaleLowerCase('zh-CN') : resolved;
+}
 function loadReaderState() {
   try {
     const data = JSON.parse(fs.readFileSync(readerStateFile(), 'utf8'));
     currentReaderFile = data.lastFile || null;
     readerBooks = Array.isArray(data.books) ? data.books.filter((book) => book && typeof book.filePath === 'string') : [];
-  } catch (_) { currentReaderFile = null; readerBooks = []; }
+    readerProgress = data.progress && typeof data.progress === 'object' && !Array.isArray(data.progress) ? data.progress : {};
+  } catch (_) { currentReaderFile = null; readerBooks = []; readerProgress = {}; }
 }
 function saveReaderState() {
   try {
     fs.mkdirSync(path.dirname(readerStateFile()), { recursive: true });
-    fs.writeFileSync(readerStateFile(), JSON.stringify({ lastFile: currentReaderFile, books: readerBooks }, null, 2));
+    fs.writeFileSync(readerStateFile(), JSON.stringify({ lastFile: currentReaderFile, books: readerBooks, progress: readerProgress }, null, 2));
   } catch (_) {}
+}
+function scheduleReaderStateSave() {
+  if (readerStateSaveTimer) clearTimeout(readerStateSaveTimer);
+  readerStateSaveTimer = setTimeout(() => {
+    readerStateSaveTimer = null;
+    saveReaderState();
+  }, 350);
+}
+
+function updateReaderProgress({ filePath, chapter, scrollTop } = {}) {
+  const key = readerProgressKey(filePath);
+  const safeChapter = Math.max(0, Math.floor(Number(chapter)));
+  const safeScrollTop = Math.max(0, Math.round(Number(scrollTop) || 0));
+  if (!key || !Number.isFinite(safeChapter)) return false;
+  readerProgress[key] = { filePath: path.resolve(filePath), chapter: safeChapter, scrollTop: safeScrollTop, updatedAt: new Date().toISOString() };
+  const keys = Object.keys(readerProgress);
+  if (keys.length > 1000) {
+    keys.sort((a, b) => String(readerProgress[b]?.updatedAt || '').localeCompare(String(readerProgress[a]?.updatedAt || '')))
+      .slice(1000)
+      .forEach((oldKey) => { delete readerProgress[oldKey]; });
+  }
+  scheduleReaderStateSave();
+  return true;
 }
 
 function touchReaderBook({ filePath, title, chapterCount } = {}) {
@@ -444,6 +475,13 @@ ipcMain.handle('reader:open', (event, filePath) => {
 
 ipcMain.handle('reader:getFile', () => currentReaderFile);
 
+ipcMain.handle('reader:getProgress', (_event, filePath) => {
+  const key = readerProgressKey(filePath);
+  return { ok: true, progress: key ? readerProgress[key] || null : null };
+});
+
+ipcMain.on('reader:setProgress', (_event, payload) => { updateReaderProgress(payload); });
+
 ipcMain.handle('reader:setFile', (event, filePath) => {
   currentReaderFile = filePath;
   saveReaderState();
@@ -480,6 +518,7 @@ ipcMain.handle('reader:removeBook', async (_event, filePath, action = 'shelf-onl
   const before = readerBooks.length;
   readerBooks = readerBooks.filter((book) => book.filePath !== filePath);
   if (currentReaderFile === filePath) currentReaderFile = null;
+  if (action === 'delete-local') delete readerProgress[readerProgressKey(filePath)];
   if (readerBooks.length !== before) saveReaderState();
   return { ok: true, deletedLocal: action === 'delete-local', warning: metadataWarning };
 });
@@ -638,4 +677,12 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
+});
+
+app.on('before-quit', () => {
+  if (readerStateSaveTimer) {
+    clearTimeout(readerStateSaveTimer);
+    readerStateSaveTimer = null;
+  }
+  saveReaderState();
 });

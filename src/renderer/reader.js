@@ -8,6 +8,7 @@ let isMarkdown = false;
 let sourceFormat = 'txt';
 let sidebarMode = 'toc';
 let removeBookResolver = null;
+let scrollSaveTimer = null;
 
 const THEMES = ['light', 'sepia', 'dark'];
 const PARAGRAPH_MODES = ['off', 'optimized'];
@@ -258,7 +259,7 @@ async function renderShelf() {
   }
 }
 
-function renderChapter(i) {
+function renderChapter(i, { scrollTop = 0, persist = true } = {}) {
   currentChapter = i;
   const ch = book.chapters[i];
   $('chapterTitle').textContent = ch.title || '正文';
@@ -293,8 +294,8 @@ function renderChapter(i) {
   const active = sidebarMode === 'toc' ? document.querySelector('#toc li.active') : null;
   if (active && active.scrollIntoView) active.scrollIntoView({ block: 'nearest' });
   // 回到顶部
-  $('content').scrollTop = 0;
-  saveProgress();
+  $('content').scrollTop = Math.max(0, Number(scrollTop) || 0);
+  if (persist) saveProgress();
 }
 
 function gotoChapter(i) {
@@ -415,10 +416,22 @@ function progressKey() {
   return 'reader-progress-' + (currentFile || 'default');
 }
 function saveProgress() {
-  if (currentFile) localStorage.setItem(progressKey(), JSON.stringify({ chapter: currentChapter }));
+  if (!currentFile || currentChapter < 0) return;
+  const progress = { chapter: currentChapter, scrollTop: $('content').scrollTop || 0 };
+  // localStorage 只作为旧版本兼容备份；长期进度由主进程写入 AppData/reader-state.json。
+  localStorage.setItem(progressKey(), JSON.stringify(progress));
+  window.api.saveReaderProgress({ filePath: currentFile, ...progress });
 }
-function loadProgress() {
-  try { return JSON.parse(localStorage.getItem(progressKey())) || {}; } catch (_) { return {}; }
+async function loadProgress() {
+  try {
+    const stored = await window.api.getReaderProgress(currentFile);
+    if (stored?.ok && stored.progress) return stored.progress;
+  } catch (_) { /* 兼容旧版 preload */ }
+  try {
+    const legacy = JSON.parse(localStorage.getItem(progressKey())) || {};
+    if (typeof legacy.chapter === 'number') window.api.saveReaderProgress({ filePath: currentFile, ...legacy });
+    return legacy;
+  } catch (_) { return {}; }
 }
 
 // ---- 载入 ----
@@ -437,9 +450,10 @@ async function loadFile(filePath, silent = false) {
   $('btnConvert').disabled = false;
   $('topTitle').textContent = book.title;
   renderToc();
-  const saved = loadProgress();
+  const saved = await loadProgress();
   const start = (typeof saved.chapter === 'number' && saved.chapter < book.chapters.length) ? saved.chapter : 0;
-  renderChapter(start);
+  renderChapter(start, { scrollTop: saved.scrollTop, persist: false });
+  saveProgress();
   await window.api.touchReaderBook({ filePath: res.path, title: book.title, chapterCount: book.chapters.length });
 }
 
@@ -485,6 +499,17 @@ window.addEventListener('DOMContentLoaded', async () => {
   });
   document.querySelectorAll('.format-option').forEach((button) => {
     button.addEventListener('click', () => convertCurrentBook(button.dataset.format));
+  });
+  $('content').addEventListener('scroll', () => {
+    if (scrollSaveTimer) clearTimeout(scrollSaveTimer);
+    scrollSaveTimer = setTimeout(() => {
+      scrollSaveTimer = null;
+      saveProgress();
+    }, 450);
+  });
+  window.addEventListener('beforeunload', saveProgress);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') saveProgress();
   });
   // 键盘翻页/翻章
   window.addEventListener('keydown', (e) => {
