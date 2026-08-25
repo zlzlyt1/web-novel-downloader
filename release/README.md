@@ -4,7 +4,7 @@
 
 ## 简体中文
 
-当前稳定版本：**2.3.1**
+当前稳定版本：**2.3.2**
 
 安装版和便携版 EXE 请从 GitHub Releases 下载：
 
@@ -14,4 +14,4 @@
 
 ## English
 
-Download the Windows x64 installer and portable edition from [GitHub Releases](https://github.com/zlzlyt1/web-novel-downloader/releases). The installer creates shortcuts; the portable edition needs no installation. `SHA256SUMS.txt` verifies file integrity. Version 2.3.1 removes wheel page turns in horizontal mode, supports middle/side mouse buttons in custom bindings, and adds previous/next chapter and font-size bindings.
+Download the Windows x64 installer and portable edition from [GitHub Releases](https://github.com/zlzlyt1/web-novel-downloader/releases). The installer creates shortcuts; the portable edition needs no installation. `SHA256SUMS.txt` verifies file integrity. Version 2.3.2 makes horizontal page-turn controls translucent by default, clear only on hover, and optionally hidden from the reader settings.

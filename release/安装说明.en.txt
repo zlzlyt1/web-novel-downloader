@@ -1,14 +1,18 @@
-Web Novel Downloader 2.3.1 (Windows x64)
+Web Novel Downloader 2.3.2 (Windows x64)
 
 Files
-1. 全网小说下载器 Setup 2.3.1.exe
+1. 全网小说下载器 Setup 2.3.2.exe
    Installer. Choose an installation directory and create desktop/Start Menu shortcuts.
 
-2. 全网小说下载器 2.3.1.exe
+2. 全网小说下载器 2.3.2.exe
    Portable edition. No installation is required; double-click to run.
 
 Verification
 Use SHA256SUMS.txt in this folder to verify downloaded files.
+
+2.3.2 feature
+Horizontal page-turn buttons are translucent with a light shadow by default and become clear only on hover or keyboard focus.
+They can also be hidden from the typography/page-key settings while custom bindings remain available.
 
 2.3.1 feature
 Wheel scrolling no longer turns horizontal pages. Custom binding capture supports middle, side, and other mouse buttons, with new previous/next chapter and font increase/decrease actions.

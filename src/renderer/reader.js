@@ -504,10 +504,13 @@ function getSettings() {
 function getReadingMode(settings = getSettings()) {
   return settings.readingMode === 'paged' ? 'paged' : 'scroll';
 }
+function showSidePageButtons(settings = getSettings()) {
+  return settings.sidePageButtons !== false;
+}
 
 function updatePageTurnControls(show = false) {
   const controls = $('pageTurnControls');
-  const isPaged = getReadingMode() === 'paged';
+  const isPaged = getReadingMode() === 'paged' && showSidePageButtons();
   controls.classList.toggle('paged', isPaged);
   if (!isPaged) {
     controls.classList.remove('visible');
@@ -518,7 +521,7 @@ function updatePageTurnControls(show = false) {
 }
 
 function revealPageTurnControls() {
-  if (getReadingMode() !== 'paged') return;
+  if (getReadingMode() !== 'paged' || !showSidePageButtons()) return;
   const controls = $('pageTurnControls');
   controls.classList.add('paged', 'visible');
   if (pageControlsTimer) clearTimeout(pageControlsTimer);
@@ -683,6 +686,13 @@ function cycleParagraphMode() {
   if (!isMarkdown && currentChapter >= 0) renderChapter(currentChapter);
 }
 
+function toggleSidePageButtons() {
+  const s = getSettings();
+  s.sidePageButtons = !showSidePageButtons(s);
+  applySettings(s);
+  saveSettings(s);
+}
+
 function refreshTypePanel(settings) {
   const s = settings || getSettings();
   $('tpFontVal').textContent = s.fontSize ?? 18;
@@ -692,6 +702,9 @@ function refreshTypePanel(settings) {
   const paragraphMode = s.paragraphMode === 'off' ? 'off' : 'optimized';
   $('tpParagraphMode').textContent = PARAGRAPH_MODE_LABELS[paragraphMode] || PARAGRAPH_MODE_LABELS.optimized;
   $('tpParagraphMode').dataset.mode = paragraphMode;
+  const sideButtonsVisible = showSidePageButtons(s);
+  $('tpSidePageButtons').textContent = sideButtonsVisible ? '显示' : '隐藏';
+  $('tpSidePageButtons').dataset.mode = sideButtonsVisible ? 'optimized' : 'off';
   if (!keyCaptureTarget) {
     CUSTOM_BINDINGS.forEach((item) => {
       const button = $(item.buttonId);
@@ -798,6 +811,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   $('tpMarginDec').addEventListener('click', () => adjustMargin(-4));
   $('tpMarginInc').addEventListener('click', () => adjustMargin(4));
   $('tpParagraphMode').addEventListener('click', cycleParagraphMode);
+  $('tpSidePageButtons').addEventListener('click', toggleSidePageButtons);
   $('tpPrevPageKey').addEventListener('click', () => beginKeyCapture('prevPageKey'));
   $('tpNextPageKey').addEventListener('click', () => beginKeyCapture('nextPageKey'));
   $('tpPrevChapterKey').addEventListener('click', () => beginKeyCapture('prevChapterKey'));
