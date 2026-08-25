@@ -24,6 +24,8 @@ const PARAGRAPH_MODES = ['off', 'optimized'];
 const PARAGRAPH_MODE_LABELS = { off: '关闭', optimized: '开启' };
 const READING_MODES = ['scroll', 'paged'];
 const READING_MODE_LABELS = { scroll: '上下', paged: '左右' };
+const PAGE_ANIMATIONS = ['sink', 'slide'];
+const PAGE_ANIMATION_LABELS = { sink: '下沉进入', slide: '惯性滑动' };
 const PAGE_KEY_DEFAULTS = { prevPageKey: 'PageUp', nextPageKey: 'PageDown' };
 const CUSTOM_BINDINGS = [
   { name: 'prevPageKey', buttonId: 'tpPrevPageKey', label: '上一页' },
@@ -597,6 +599,7 @@ function cycleReadingMode() {
 function applySettings(s) {
   const theme = s.theme || 'sepia';
   document.body.dataset.theme = theme;
+  document.body.dataset.pageAnimation = PAGE_ANIMATIONS.includes(s.pageAnimation) ? s.pageAnimation : 'sink';
   applyThemePalette(s, theme);
   document.documentElement.style.setProperty('--font-size', (s.fontSize ?? 18) + 'px');
   document.documentElement.style.setProperty('--line-height', String(s.lineHeight ?? 1.9));
@@ -715,6 +718,14 @@ function toggleSidePageButtons() {
   saveSettings(s);
 }
 
+function cyclePageAnimation() {
+  const s = getSettings();
+  const current = PAGE_ANIMATIONS.includes(s.pageAnimation) ? s.pageAnimation : 'sink';
+  s.pageAnimation = PAGE_ANIMATIONS[(PAGE_ANIMATIONS.indexOf(current) + 1) % PAGE_ANIMATIONS.length];
+  applySettings(s);
+  saveSettings(s);
+}
+
 function refreshTypePanel(settings) {
   const s = settings || getSettings();
   $('tpFontVal').textContent = s.fontSize ?? 18;
@@ -727,6 +738,9 @@ function refreshTypePanel(settings) {
   const sideButtonsVisible = showSidePageButtons(s);
   $('tpSidePageButtons').textContent = sideButtonsVisible ? '显示' : '隐藏';
   $('tpSidePageButtons').dataset.mode = sideButtonsVisible ? 'optimized' : 'off';
+  const pageAnimation = PAGE_ANIMATIONS.includes(s.pageAnimation) ? s.pageAnimation : 'sink';
+  $('tpPageAnimation').textContent = PAGE_ANIMATION_LABELS[pageAnimation];
+  $('tpPageAnimation').dataset.mode = 'optimized';
   if (!keyCaptureTarget) {
     CUSTOM_BINDINGS.forEach((item) => {
       const button = $(item.buttonId);
@@ -834,6 +848,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   $('tpMarginInc').addEventListener('click', () => adjustMargin(4));
   $('tpParagraphMode').addEventListener('click', cycleParagraphMode);
   $('tpSidePageButtons').addEventListener('click', toggleSidePageButtons);
+  $('tpPageAnimation').addEventListener('click', cyclePageAnimation);
   $('tpPrevPageKey').addEventListener('click', () => beginKeyCapture('prevPageKey'));
   $('tpNextPageKey').addEventListener('click', () => beginKeyCapture('nextPageKey'));
   $('tpPrevChapterKey').addEventListener('click', () => beginKeyCapture('prevChapterKey'));

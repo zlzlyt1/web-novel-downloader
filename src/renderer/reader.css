@@ -160,28 +160,50 @@ body[data-theme="dark"] {
 .content[data-reading-mode="paged"] .nav { break-inside: avoid; }
 
 /* 横向翻书：旧页向下沉降，新页从翻页方向进入并减速落位。 */
-@keyframes page-exit-next {
+@keyframes page-sink-exit-next {
   from { opacity: 1; transform: translateX(0) scale(1); filter: blur(0); }
   to { opacity: .12; transform: translateY(38px) scale(.982); filter: blur(.65px); }
 }
-@keyframes page-exit-prev {
+@keyframes page-sink-exit-prev {
   from { opacity: 1; transform: translateX(0) scale(1); filter: blur(0); }
   to { opacity: .12; transform: translateY(38px) scale(.982); filter: blur(.65px); }
 }
-@keyframes page-enter-next {
+@keyframes page-sink-enter-next {
   0% { opacity: .22; transform: translate(68px, -7px) scale(.99); filter: blur(.55px); }
   72% { opacity: .96; transform: translate(-3px, 1px) scale(1); filter: blur(0); }
   100% { opacity: 1; transform: translateX(0) scale(1); filter: blur(0); }
 }
-@keyframes page-enter-prev {
+@keyframes page-sink-enter-prev {
   0% { opacity: .22; transform: translate(-68px, -7px) scale(.99); filter: blur(.55px); }
   72% { opacity: .96; transform: translate(3px, 1px) scale(1); filter: blur(0); }
   100% { opacity: 1; transform: translateX(0) scale(1); filter: blur(0); }
 }
-.page-flow.page-exit-next { transform-origin: center bottom; animation: page-exit-next .18s cubic-bezier(.55,.06,.68,.19) both; }
-.page-flow.page-exit-prev { transform-origin: center bottom; animation: page-exit-prev .18s cubic-bezier(.55,.06,.68,.19) both; }
-.page-flow.page-enter-next { animation: page-enter-next .3s cubic-bezier(.16,1,.3,1) both; }
-.page-flow.page-enter-prev { animation: page-enter-prev .3s cubic-bezier(.16,1,.3,1) both; }
+@keyframes page-slide-exit-next {
+  from { opacity: 1; transform: translateX(0) scale(1); filter: blur(0); }
+  to { opacity: .28; transform: translateX(-54px) scale(.992); filter: blur(.45px); }
+}
+@keyframes page-slide-exit-prev {
+  from { opacity: 1; transform: translateX(0) scale(1); filter: blur(0); }
+  to { opacity: .28; transform: translateX(54px) scale(.992); filter: blur(.45px); }
+}
+@keyframes page-slide-enter-next {
+  0% { opacity: .24; transform: translateX(66px) scale(.991); filter: blur(.55px); }
+  72% { opacity: .96; transform: translateX(-3px) scale(1); filter: blur(0); }
+  100% { opacity: 1; transform: translateX(0) scale(1); filter: blur(0); }
+}
+@keyframes page-slide-enter-prev {
+  0% { opacity: .24; transform: translateX(-66px) scale(.991); filter: blur(.55px); }
+  72% { opacity: .96; transform: translateX(3px) scale(1); filter: blur(0); }
+  100% { opacity: 1; transform: translateX(0) scale(1); filter: blur(0); }
+}
+body[data-page-animation="sink"] .page-flow.page-exit-next { transform-origin: center bottom; animation: page-sink-exit-next .18s cubic-bezier(.55,.06,.68,.19) both; }
+body[data-page-animation="sink"] .page-flow.page-exit-prev { transform-origin: center bottom; animation: page-sink-exit-prev .18s cubic-bezier(.55,.06,.68,.19) both; }
+body[data-page-animation="sink"] .page-flow.page-enter-next { animation: page-sink-enter-next .3s cubic-bezier(.16,1,.3,1) both; }
+body[data-page-animation="sink"] .page-flow.page-enter-prev { animation: page-sink-enter-prev .3s cubic-bezier(.16,1,.3,1) both; }
+body[data-page-animation="slide"] .page-flow.page-exit-next { animation: page-slide-exit-next .18s cubic-bezier(.55,.06,.68,.19) both; }
+body[data-page-animation="slide"] .page-flow.page-exit-prev { animation: page-slide-exit-prev .18s cubic-bezier(.55,.06,.68,.19) both; }
+body[data-page-animation="slide"] .page-flow.page-enter-next { animation: page-slide-enter-next .3s cubic-bezier(.16,1,.3,1) both; }
+body[data-page-animation="slide"] .page-flow.page-enter-prev { animation: page-slide-enter-prev .3s cubic-bezier(.16,1,.3,1) both; }
 .page-turn-controls {
   position: fixed; inset: var(--topbar-h) 0 0; z-index: 15; pointer-events: none;
   opacity: 0; transition: opacity .28s ease;
