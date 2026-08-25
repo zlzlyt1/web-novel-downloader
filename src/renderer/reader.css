@@ -272,7 +272,7 @@ body[data-theme="dark"] {
   transition: max-height .3s ease, padding .3s ease, opacity .2s ease, transform .3s ease;
 }
 .settings-panel.open {
-  max-height: 760px; padding: 12px 14px; opacity: 1; pointer-events: auto;
+  max-height: 820px; padding: 12px 14px; opacity: 1; pointer-events: auto;
   transform: translateY(0) scale(1);
 }
 .settings-actions { display: grid; gap: 7px; }
@@ -319,7 +319,7 @@ body[data-theme="dark"] {
   transition: max-height .28s ease, opacity .2s ease, padding .28s ease, transform .28s ease;
 }
 .type-panel.open {
-  max-height: 330px; opacity: 1; padding: 8px 2px 1px;
+  max-height: 500px; opacity: 1; padding: 8px 2px 1px;
   transform: translateY(0);
 }
 .tp-row { display: flex; align-items: center; gap: 10px; padding: 5px 0; }

@@ -9,7 +9,6 @@ let sourceFormat = 'txt';
 let sidebarMode = 'toc';
 let removeBookResolver = null;
 let scrollSaveTimer = null;
-let wheelPageLocked = false;
 let pageControlsTimer = null;
 let pageAnimationTimer = null;
 
@@ -25,6 +24,14 @@ const PARAGRAPH_MODE_LABELS = { off: '关闭', optimized: '开启' };
 const READING_MODES = ['scroll', 'paged'];
 const READING_MODE_LABELS = { scroll: '上下', paged: '左右' };
 const PAGE_KEY_DEFAULTS = { prevPageKey: 'PageUp', nextPageKey: 'PageDown' };
+const CUSTOM_BINDINGS = [
+  { name: 'prevPageKey', buttonId: 'tpPrevPageKey', label: '上一页' },
+  { name: 'nextPageKey', buttonId: 'tpNextPageKey', label: '下一页' },
+  { name: 'prevChapterKey', buttonId: 'tpPrevChapterKey', label: '上一章' },
+  { name: 'nextChapterKey', buttonId: 'tpNextChapterKey', label: '下一章' },
+  { name: 'fontIncreaseKey', buttonId: 'tpFontIncreaseKey', label: '字体放大' },
+  { name: 'fontDecreaseKey', buttonId: 'tpFontDecreaseKey', label: '字体缩小' },
+];
 let keyCaptureTarget = null;
 const VOLUME_RE = /^第\s*[0-9一二三四五六七八九十百千万零]+\s*[卷集]/;
 const CHAPTER_RE = /^第\s*[0-9一二三四五六七八九十百千万零]+\s*[章节回]/;
@@ -100,13 +107,14 @@ function keyBindingLabel(binding) {
 }
 
 function settingPageKey(settings, name) {
-  const value = String(settings?.[name] || PAGE_KEY_DEFAULTS[name]);
-  return value || PAGE_KEY_DEFAULTS[name];
+  const fallback = PAGE_KEY_DEFAULTS[name] || '';
+  const value = String(settings?.[name] || fallback);
+  return value || fallback;
 }
 
 function beginKeyCapture(name) {
   keyCaptureTarget = name;
-  const button = $(name === 'prevPageKey' ? 'tpPrevPageKey' : 'tpNextPageKey');
+  const button = $(CUSTOM_BINDINGS.find((item) => item.name === name)?.buttonId);
   button.dataset.capturing = 'true';
   button.textContent = '请按键…';
   button.focus();
@@ -123,9 +131,9 @@ function finishKeyCapture(event) {
   const binding = keyBindingFromEvent(event);
   if (!binding) return true;
   const settings = getSettings();
-  const otherName = keyCaptureTarget === 'prevPageKey' ? 'nextPageKey' : 'prevPageKey';
-  if (binding === settingPageKey(settings, otherName)) {
-    const button = $(keyCaptureTarget === 'prevPageKey' ? 'tpPrevPageKey' : 'tpNextPageKey');
+  const usedBy = CUSTOM_BINDINGS.find((item) => item.name !== keyCaptureTarget && binding === settingPageKey(settings, item.name));
+  if (usedBy) {
+    const button = $(CUSTOM_BINDINGS.find((item) => item.name === keyCaptureTarget)?.buttonId);
     button.textContent = '按键已占用';
     setTimeout(() => { if (keyCaptureTarget) refreshTypePanel(); }, 700);
     event.preventDefault();
@@ -137,6 +145,42 @@ function finishKeyCapture(event) {
   refreshTypePanel(settings);
   event.preventDefault();
   return true;
+}
+
+function mouseBindingFromEvent(event) {
+  const labels = { 0: 'MouseLeft', 1: 'MouseMiddle', 2: 'MouseRight', 3: 'MouseBack', 4: 'MouseForward' };
+  return labels[event.button] || `MouseButton${event.button}`;
+}
+
+function finishMouseCapture(event) {
+  if (!keyCaptureTarget) return false;
+  const binding = mouseBindingFromEvent(event);
+  const settings = getSettings();
+  const usedBy = CUSTOM_BINDINGS.find((item) => item.name !== keyCaptureTarget && binding === settingPageKey(settings, item.name));
+  if (usedBy) {
+    $(CUSTOM_BINDINGS.find((item) => item.name === keyCaptureTarget)?.buttonId).textContent = '按键已占用';
+    setTimeout(() => { if (keyCaptureTarget) refreshTypePanel(); }, 700);
+  } else {
+    settings[keyCaptureTarget] = binding;
+    saveSettings(settings);
+    keyCaptureTarget = null;
+    refreshTypePanel(settings);
+  }
+  event.preventDefault();
+  event.stopPropagation();
+  return true;
+}
+
+function runCustomBinding(binding) {
+  if (!binding) return false;
+  const settings = getSettings();
+  if (binding === settingPageKey(settings, 'prevPageKey')) { turnPage(-1); return true; }
+  if (binding === settingPageKey(settings, 'nextPageKey')) { turnPage(1); return true; }
+  if (binding === settingPageKey(settings, 'prevChapterKey')) { gotoChapter(currentChapter - 1); return true; }
+  if (binding === settingPageKey(settings, 'nextChapterKey')) { gotoChapter(currentChapter + 1); return true; }
+  if (binding === settingPageKey(settings, 'fontIncreaseKey')) { adjustFont(1); return true; }
+  if (binding === settingPageKey(settings, 'fontDecreaseKey')) { adjustFont(-1); return true; }
+  return false;
 }
 
 function turnPage(direction) {
@@ -649,10 +693,11 @@ function refreshTypePanel(settings) {
   $('tpParagraphMode').textContent = PARAGRAPH_MODE_LABELS[paragraphMode] || PARAGRAPH_MODE_LABELS.optimized;
   $('tpParagraphMode').dataset.mode = paragraphMode;
   if (!keyCaptureTarget) {
-    $('tpPrevPageKey').textContent = keyBindingLabel(settingPageKey(s, 'prevPageKey'));
-    $('tpNextPageKey').textContent = keyBindingLabel(settingPageKey(s, 'nextPageKey'));
-    $('tpPrevPageKey').dataset.capturing = 'false';
-    $('tpNextPageKey').dataset.capturing = 'false';
+    CUSTOM_BINDINGS.forEach((item) => {
+      const button = $(item.buttonId);
+      button.textContent = keyBindingLabel(settingPageKey(s, item.name)) || '未设置';
+      button.dataset.capturing = 'false';
+    });
   }
 }
 
@@ -755,6 +800,10 @@ window.addEventListener('DOMContentLoaded', async () => {
   $('tpParagraphMode').addEventListener('click', cycleParagraphMode);
   $('tpPrevPageKey').addEventListener('click', () => beginKeyCapture('prevPageKey'));
   $('tpNextPageKey').addEventListener('click', () => beginKeyCapture('nextPageKey'));
+  $('tpPrevChapterKey').addEventListener('click', () => beginKeyCapture('prevChapterKey'));
+  $('tpNextChapterKey').addEventListener('click', () => beginKeyCapture('nextChapterKey'));
+  $('tpFontIncreaseKey').addEventListener('click', () => beginKeyCapture('fontIncreaseKey'));
+  $('tpFontDecreaseKey').addEventListener('click', () => beginKeyCapture('fontDecreaseKey'));
   $('removeBookCancel').addEventListener('click', () => closeRemoveModal());
   $('removeBookShelfOnly').addEventListener('click', () => closeRemoveModal('shelf-only'));
   $('removeBookDeleteLocal').addEventListener('click', () => closeRemoveModal('delete-local'));
@@ -789,21 +838,19 @@ window.addEventListener('DOMContentLoaded', async () => {
       saveProgress();
     }, 450);
   });
-  $('content').addEventListener('wheel', (event) => {
-    if (getReadingMode() !== 'paged' || event.ctrlKey) return;
-    const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
-    if (Math.abs(delta) < 8) return;
-    event.preventDefault();
-    if (wheelPageLocked) return;
-    wheelPageLocked = true;
-    turnPage(delta > 0 ? 1 : -1);
-    setTimeout(() => { wheelPageLocked = false; }, 320);
-  }, { passive: false });
   window.addEventListener('beforeunload', saveProgress);
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') saveProgress();
   });
   document.addEventListener('mousemove', () => revealPageTurnControls());
+  document.addEventListener('mousedown', (event) => {
+    if (finishMouseCapture(event)) return;
+    if (event.target.closest('button, input, textarea, select, a')) return;
+    if (runCustomBinding(mouseBindingFromEvent(event))) event.preventDefault();
+  }, true);
+  document.addEventListener('contextmenu', (event) => {
+    if (keyCaptureTarget && finishMouseCapture(event)) event.preventDefault();
+  }, true);
   // 键盘翻页/翻章
   window.addEventListener('keydown', (e) => {
     if (finishKeyCapture(e)) return;
@@ -820,18 +867,9 @@ window.addEventListener('DOMContentLoaded', async () => {
       return;
     }
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-    const settings = getSettings();
-    const prevPageKey = settingPageKey(settings, 'prevPageKey');
-    const nextPageKey = settingPageKey(settings, 'nextPageKey');
     const pressedKey = keyBindingFromEvent(e);
-    if (pressedKey === prevPageKey) {
+    if (runCustomBinding(pressedKey)) {
       e.preventDefault();
-      turnPage(-1);
-      return;
-    }
-    if (pressedKey === nextPageKey) {
-      e.preventDefault();
-      turnPage(1);
       return;
     }
     // 左右方向键保留原有的章节切换；“左右”指横向书页布局，而非固定按键。
