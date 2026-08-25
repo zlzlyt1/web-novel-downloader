@@ -13,6 +13,8 @@ let scrollSaveTimer = null;
 const THEMES = ['light', 'sepia', 'dark'];
 const PARAGRAPH_MODES = ['off', 'optimized'];
 const PARAGRAPH_MODE_LABELS = { off: '关闭', optimized: '开启' };
+const PAGE_KEY_DEFAULTS = { prevPageKey: 'PageUp', nextPageKey: 'PageDown' };
+let keyCaptureTarget = null;
 const VOLUME_RE = /^第\s*[0-9一二三四五六七八九十百千万零]+\s*[卷集]/;
 const CHAPTER_RE = /^第\s*[0-9一二三四五六七八九十百千万零]+\s*[章节回]/;
 const NUMBERED_CHAPTER_RE = /^\d{1,6}\s+\S/;
@@ -58,6 +60,93 @@ function openConvertModal() {
 
 function closeConvertModal() {
   $('convertModal').classList.add('hidden');
+}
+
+function keyBindingFromEvent(event) {
+  const base = event.code || event.key;
+  if (!base || ['Control', 'Alt', 'Shift', 'Meta'].includes(event.key)) return '';
+  const modifiers = [];
+  if (event.ctrlKey) modifiers.push('Ctrl');
+  if (event.altKey) modifiers.push('Alt');
+  if (event.shiftKey) modifiers.push('Shift');
+  if (event.metaKey) modifiers.push('Meta');
+  return [...modifiers, base].join('+');
+}
+
+function keyBindingLabel(binding) {
+  const labels = {
+    PageUp: 'PageUp', PageDown: 'PageDown', ArrowLeft: '←', ArrowRight: '→',
+    ArrowUp: '↑', ArrowDown: '↓', Space: '空格', Escape: 'Esc', Enter: 'Enter',
+    Backspace: 'Backspace', Delete: 'Delete', Home: 'Home', End: 'End', Tab: 'Tab',
+  };
+  return String(binding || '').split('+').map((part) => {
+    if (labels[part]) return labels[part];
+    if (/^Key[A-Z]$/.test(part)) return part.slice(3);
+    if (/^Digit\d$/.test(part)) return part.slice(5);
+    if (/^Numpad/.test(part)) return part.replace('Numpad', '小键盘 ');
+    return part;
+  }).join('+');
+}
+
+function settingPageKey(settings, name) {
+  const value = String(settings?.[name] || PAGE_KEY_DEFAULTS[name]);
+  return value || PAGE_KEY_DEFAULTS[name];
+}
+
+function beginKeyCapture(name) {
+  keyCaptureTarget = name;
+  const button = $(name === 'prevPageKey' ? 'tpPrevPageKey' : 'tpNextPageKey');
+  button.dataset.capturing = 'true';
+  button.textContent = '请按键…';
+  button.focus();
+}
+
+function finishKeyCapture(event) {
+  if (!keyCaptureTarget) return false;
+  if (event.key === 'Escape') {
+    keyCaptureTarget = null;
+    refreshTypePanel();
+    event.preventDefault();
+    return true;
+  }
+  const binding = keyBindingFromEvent(event);
+  if (!binding) return true;
+  const settings = getSettings();
+  const otherName = keyCaptureTarget === 'prevPageKey' ? 'nextPageKey' : 'prevPageKey';
+  if (binding === settingPageKey(settings, otherName)) {
+    const button = $(keyCaptureTarget === 'prevPageKey' ? 'tpPrevPageKey' : 'tpNextPageKey');
+    button.textContent = '按键已占用';
+    setTimeout(() => { if (keyCaptureTarget) refreshTypePanel(); }, 700);
+    event.preventDefault();
+    return true;
+  }
+  settings[keyCaptureTarget] = binding;
+  saveSettings(settings);
+  keyCaptureTarget = null;
+  refreshTypePanel(settings);
+  event.preventDefault();
+  return true;
+}
+
+function turnPage(direction) {
+  if (currentChapter < 0) return;
+  const content = $('content');
+  const maxScroll = Math.max(0, content.scrollHeight - content.clientHeight);
+  const atStart = content.scrollTop <= 2;
+  const atEnd = content.scrollTop >= maxScroll - 2;
+  if (direction < 0 && atStart && currentChapter > 0) {
+    gotoChapter(currentChapter - 1);
+    content.scrollTop = Math.max(0, content.scrollHeight - content.clientHeight);
+    saveProgress();
+    return;
+  }
+  if (direction > 0 && atEnd && currentChapter < book.chapters.length - 1) {
+    gotoChapter(currentChapter + 1);
+    return;
+  }
+  const step = Math.max(120, Math.floor(content.clientHeight * 0.88));
+  content.scrollTop = Math.max(0, Math.min(maxScroll, content.scrollTop + direction * step));
+  saveProgress();
 }
 
 async function convertCurrentBook(targetFormat) {
@@ -405,6 +494,12 @@ function refreshTypePanel(settings) {
   const paragraphMode = s.paragraphMode === 'off' ? 'off' : 'optimized';
   $('tpParagraphMode').textContent = PARAGRAPH_MODE_LABELS[paragraphMode] || PARAGRAPH_MODE_LABELS.optimized;
   $('tpParagraphMode').dataset.mode = paragraphMode;
+  if (!keyCaptureTarget) {
+    $('tpPrevPageKey').textContent = keyBindingLabel(settingPageKey(s, 'prevPageKey'));
+    $('tpNextPageKey').textContent = keyBindingLabel(settingPageKey(s, 'nextPageKey'));
+    $('tpPrevPageKey').dataset.capturing = 'false';
+    $('tpNextPageKey').dataset.capturing = 'false';
+  }
 }
 
 function toggleTypePanel() {
@@ -476,6 +571,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   $('tpMarginDec').addEventListener('click', () => adjustMargin(-4));
   $('tpMarginInc').addEventListener('click', () => adjustMargin(4));
   $('tpParagraphMode').addEventListener('click', cycleParagraphMode);
+  $('tpPrevPageKey').addEventListener('click', () => beginKeyCapture('prevPageKey'));
+  $('tpNextPageKey').addEventListener('click', () => beginKeyCapture('nextPageKey'));
   $('removeBookCancel').addEventListener('click', () => closeRemoveModal());
   $('removeBookShelfOnly').addEventListener('click', () => closeRemoveModal('shelf-only'));
   $('removeBookDeleteLocal').addEventListener('click', () => closeRemoveModal('delete-local'));
@@ -513,6 +610,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   });
   // 键盘翻页/翻章
   window.addEventListener('keydown', (e) => {
+    if (finishKeyCapture(e)) return;
     if (e.key === 'Escape' && !$('removeBookModal').classList.contains('hidden')) {
       closeRemoveModal();
       return;
@@ -522,6 +620,20 @@ window.addEventListener('DOMContentLoaded', async () => {
       return;
     }
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    const settings = getSettings();
+    const prevPageKey = settingPageKey(settings, 'prevPageKey');
+    const nextPageKey = settingPageKey(settings, 'nextPageKey');
+    const pressedKey = keyBindingFromEvent(e);
+    if (pressedKey === prevPageKey) {
+      e.preventDefault();
+      turnPage(-1);
+      return;
+    }
+    if (pressedKey === nextPageKey) {
+      e.preventDefault();
+      turnPage(1);
+      return;
+    }
     if (e.key === 'ArrowLeft') gotoChapter(currentChapter - 1);
     if (e.key === 'ArrowRight') gotoChapter(currentChapter + 1);
   });
