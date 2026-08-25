@@ -2,7 +2,7 @@
 
 Language: [简体中文](README.md) · [English](README.en.md)
 
-Current stable version: **2.2.4**
+Current stable version: **2.2.5**
 
 Download the Windows x64 installer and portable executable from [GitHub Releases](https://github.com/zlzlyt1/web-novel-downloader/releases).
 
@@ -10,8 +10,13 @@ The repository keeps installation instructions and SHA-256 checksums. See the ro
 
 ## Included packages
 
-- `全网小说下载器 Setup 2.2.4.exe` — installer with desktop and Start Menu shortcuts.
-- `全网小说下载器 2.2.4.exe` — portable edition; no installation required.
+- `全网小说下载器 Setup 2.2.5.exe` — installer with desktop and Start Menu shortcuts.
+- `全网小说下载器 2.2.5.exe` — portable edition; no installation required.
+
+## 2.2.5 animated Settings panel
+
+- Consolidates theme, page layout, format conversion, typography, and page-key controls into the top-bar Settings button.
+- Settings and its typography/key subsection expand and collapse with theme-aware animation.
 
 ## 2.2.4 horizontal book pages
 

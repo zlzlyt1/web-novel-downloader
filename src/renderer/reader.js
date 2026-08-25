@@ -453,7 +453,7 @@ function applyReadingMode(mode) {
   const content = $('content');
   content.dataset.readingMode = normalized;
   const button = $('btnReadingMode');
-  button.textContent = READING_MODE_LABELS[normalized];
+  button.querySelector('strong').textContent = READING_MODE_LABELS[normalized];
   button.title = `切换翻页方式（当前：${normalized === 'paged' ? '左右翻书' : '上下滚动'}）`;
 }
 
@@ -565,7 +565,20 @@ function refreshTypePanel(settings) {
 }
 
 function toggleTypePanel() {
-  $('typePanel').classList.toggle('hidden');
+  const panel = $('typePanel');
+  const isOpen = panel.classList.toggle('open');
+  $('btnTypographySettings').setAttribute('aria-expanded', String(isOpen));
+}
+
+function toggleSettingsPanel() {
+  const panel = $('settingsPanel');
+  const isOpen = panel.classList.toggle('open');
+  $('btnSettings').setAttribute('aria-expanded', String(isOpen));
+}
+
+function closeSettingsPanel() {
+  $('settingsPanel').classList.remove('open');
+  $('btnSettings').setAttribute('aria-expanded', 'false');
 }
 
 // ---- 进度 ----
@@ -630,7 +643,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   $('btnNext').addEventListener('click', () => gotoChapter(currentChapter + 1));
   $('btnTheme').addEventListener('click', cycleTheme);
   $('btnReadingMode').addEventListener('click', cycleReadingMode);
-  $('btnType').addEventListener('click', toggleTypePanel);
+  $('btnSettings').addEventListener('click', toggleSettingsPanel);
+  $('btnTypographySettings').addEventListener('click', toggleTypePanel);
   $('tpFontDec').addEventListener('click', () => adjustFont(-1));
   $('tpFontInc').addEventListener('click', () => adjustFont(1));
   $('tpLineDec').addEventListener('click', () => adjustLine(-0.1));
@@ -649,16 +663,19 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (event.target === $('removeBookModal')) closeRemoveModal();
   });
   document.addEventListener('click', (e) => {
-    const panel = $('typePanel');
-    if (!panel.classList.contains('hidden') && !panel.contains(e.target) && e.target.id !== 'btnType') {
-      panel.classList.add('hidden');
+    const panel = $('settingsPanel');
+    if (panel.classList.contains('open') && !panel.contains(e.target) && e.target.id !== 'btnSettings') {
+      closeSettingsPanel();
     }
   });
   $('btnOpen').addEventListener('click', async () => {
     const f = await window.api.chooseFile();
     if (f) loadFile(f);
   });
-  $('btnConvert').addEventListener('click', openConvertModal);
+  $('btnConvert').addEventListener('click', () => {
+    closeSettingsPanel();
+    openConvertModal();
+  });
   $('convertCancel').addEventListener('click', closeConvertModal);
   $('convertModal').addEventListener('click', (event) => {
     if (event.target === $('convertModal')) closeConvertModal();
@@ -696,6 +713,10 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
     if (e.key === 'Escape' && !$('convertModal').classList.contains('hidden')) {
       closeConvertModal();
+      return;
+    }
+    if (e.key === 'Escape' && $('settingsPanel').classList.contains('open')) {
+      closeSettingsPanel();
       return;
     }
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
