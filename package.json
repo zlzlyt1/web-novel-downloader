@@ -1,6 +1,6 @@
 {
   "name": "web-novel-downloader",
-  "version": "2.3.5",
+  "version": "2.3.6",
   "productName": "全网小说下载器",
   "description": "全网公开小说搜索、TXT 下载与 EPUB/Markdown/TXT 本地阅读转换桌面应用",
   "main": "main.js",

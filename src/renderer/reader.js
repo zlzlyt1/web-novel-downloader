@@ -24,8 +24,8 @@ const PARAGRAPH_MODES = ['off', 'optimized'];
 const PARAGRAPH_MODE_LABELS = { off: '关闭', optimized: '开启' };
 const READING_MODES = ['scroll', 'paged'];
 const READING_MODE_LABELS = { scroll: '上下', paged: '左右' };
-const PAGE_ANIMATIONS = ['sink', 'slide'];
-const PAGE_ANIMATION_LABELS = { sink: '下沉进入', slide: '惯性滑动' };
+const PAGE_ANIMATIONS = ['sink', 'slide', 'off'];
+const PAGE_ANIMATION_LABELS = { sink: '下沉进入', slide: '惯性滑动', off: '关闭动画' };
 const PAGE_KEY_DEFAULTS = { prevPageKey: 'PageUp', nextPageKey: 'PageDown' };
 const CUSTOM_BINDINGS = [
   { name: 'prevPageKey', buttonId: 'tpPrevPageKey', label: '上一页' },
@@ -202,9 +202,12 @@ function turnPage(direction) {
   const readingMode = getReadingMode();
   if (readingMode === 'paged') {
     revealPageTurnControls();
-    const maxScrollLeft = Math.max(0, content.scrollWidth - content.clientWidth);
-    const atStart = content.scrollLeft <= 2;
-    const atEnd = content.scrollLeft >= maxScrollLeft - 2;
+    const pageWidth = Math.max(1, content.clientWidth);
+    const maxScrollLeft = Math.max(0, content.scrollWidth - pageWidth);
+    const currentPage = Math.max(0, Math.round(content.scrollLeft / pageWidth));
+    const lastPage = Math.max(0, Math.ceil(maxScrollLeft / pageWidth));
+    const atStart = currentPage === 0 || content.scrollLeft <= 2;
+    const atEnd = currentPage >= lastPage || maxScrollLeft - content.scrollLeft <= 2;
     if (direction < 0 && atStart && currentChapter > 0) {
       playPageTurnAnimation(direction, () => {
         gotoChapter(currentChapter - 1);
@@ -217,8 +220,8 @@ function turnPage(direction) {
       playPageTurnAnimation(direction, () => gotoChapter(currentChapter + 1));
       return;
     }
-    const step = Math.max(1, content.clientWidth);
-    const nextScrollLeft = Math.max(0, Math.min(maxScrollLeft, content.scrollLeft + direction * step));
+    const targetPage = Math.max(0, Math.min(lastPage, currentPage + direction));
+    const nextScrollLeft = targetPage === lastPage ? maxScrollLeft : targetPage * pageWidth;
     if (nextScrollLeft !== content.scrollLeft) {
       playPageTurnAnimation(direction, () => {
         content.scrollLeft = nextScrollLeft;
@@ -546,7 +549,8 @@ function revealPageTurnControls() {
 
 function playPageTurnAnimation(direction, commitTurn) {
   if (pageAnimationRunning) return false;
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  const animationSetting = getSettings().pageAnimation;
+  if (animationSetting === 'off' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
     commitTurn();
     return true;
   }
@@ -750,7 +754,7 @@ function refreshTypePanel(settings) {
   $('tpSidePageButtons').dataset.mode = sideButtonsVisible ? 'optimized' : 'off';
   const pageAnimation = PAGE_ANIMATIONS.includes(s.pageAnimation) ? s.pageAnimation : 'sink';
   $('tpPageAnimation').textContent = PAGE_ANIMATION_LABELS[pageAnimation];
-  $('tpPageAnimation').dataset.mode = 'optimized';
+  $('tpPageAnimation').dataset.mode = pageAnimation === 'off' ? 'off' : 'optimized';
   if (!keyCaptureTarget) {
     CUSTOM_BINDINGS.forEach((item) => {
       const button = $(item.buttonId);
