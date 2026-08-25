@@ -20,9 +20,22 @@
 
     <aside id="settingsPanel" class="settings-panel" aria-label="阅读设置">
       <div class="settings-actions">
-        <button id="btnTheme" class="settings-action" title="切换主题"><span>主题</span><strong>切换</strong></button>
+        <button id="btnTheme" class="settings-action" title="选择主题与控件配色" aria-expanded="false"><span>主题</span><strong>羊皮纸</strong></button>
         <button id="btnReadingMode" class="settings-action" title="切换翻页方式"><span>翻页方式</span><strong>上下</strong></button>
         <button id="btnConvert" class="settings-action" title="在 EPUB / Markdown / TXT 之间转换" disabled><span>格式转换</span><strong>EPUB / MD / TXT</strong></button>
+      </div>
+      <div id="themePanel" class="theme-panel">
+        <div class="theme-choice-row" role="group" aria-label="选择阅读主题">
+          <button class="theme-choice" data-theme-choice="light">浅色</button>
+          <button class="theme-choice" data-theme-choice="sepia">羊皮纸</button>
+          <button class="theme-choice" data-theme-choice="dark">深色</button>
+        </div>
+        <div class="theme-color-grid">
+          <label class="theme-color-field">控件外框<input id="themeBorderColor" type="color" aria-label="控件外框颜色" /></label>
+          <label class="theme-color-field">控件填充<input id="themeFillColor" type="color" aria-label="控件填充颜色" /></label>
+          <label class="theme-color-field">强调颜色<input id="themeAccentColor" type="color" aria-label="强调颜色" /></label>
+        </div>
+        <button id="btnResetThemeColors" class="theme-reset-btn">恢复本主题默认配色</button>
       </div>
       <button id="btnTypographySettings" class="settings-section-toggle" aria-expanded="false">
         <span>排版与翻页按键</span><span class="settings-chevron">⌄</span>

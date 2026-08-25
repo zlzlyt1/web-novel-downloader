@@ -4,7 +4,7 @@
 
 ## 简体中文
 
-当前稳定版本：**2.2.6**
+当前稳定版本：**2.2.7**
 
 安装版和便携版 EXE 请从 GitHub Releases 下载：
 
@@ -14,4 +14,4 @@
 
 ## English
 
-Download the Windows x64 installer and portable edition from [GitHub Releases](https://github.com/zlzlyt1/web-novel-downloader/releases). The installer creates shortcuts; the portable edition needs no installation. `SHA256SUMS.txt` verifies file integrity. Version 2.2.6 adds animated horizontal page turns and auto-hiding circular side page buttons.
+Download the Windows x64 installer and portable edition from [GitHub Releases](https://github.com/zlzlyt1/web-novel-downloader/releases). The installer creates shortcuts; the portable edition needs no installation. `SHA256SUMS.txt` verifies file integrity. Version 2.2.7 prevents ordinary paragraphs from splitting across horizontal pages, centers the floating page arrows, and adds per-theme custom control border, fill, and accent colors.

@@ -14,6 +14,12 @@ let pageControlsTimer = null;
 let pageAnimationTimer = null;
 
 const THEMES = ['light', 'sepia', 'dark'];
+const THEME_LABELS = { light: '浅色', sepia: '羊皮纸', dark: '深色' };
+const THEME_PALETTE_DEFAULTS = {
+  light: { border: '#e6e8ec', fill: '#ffffff', accent: '#e84c3d' },
+  sepia: { border: '#ddd2bc', fill: '#f5f0e6', accent: '#b08968' },
+  dark: { border: '#3a3a3c', fill: '#1c1c1e', accent: '#ff7b6b' },
+};
 const PARAGRAPH_MODES = ['off', 'optimized'];
 const PARAGRAPH_MODE_LABELS = { off: '关闭', optimized: '开启' };
 const READING_MODES = ['scroll', 'paged'];
@@ -522,6 +528,7 @@ function cycleReadingMode() {
 function applySettings(s) {
   const theme = s.theme || 'sepia';
   document.body.dataset.theme = theme;
+  applyThemePalette(s, theme);
   document.documentElement.style.setProperty('--font-size', (s.fontSize ?? 18) + 'px');
   document.documentElement.style.setProperty('--line-height', String(s.lineHeight ?? 1.9));
   document.documentElement.style.setProperty('--para-margin', (s.paraSpacing ?? 1) + 'em');
@@ -537,12 +544,58 @@ function saveSettings(s) {
   localStorage.setItem('reader-settings', JSON.stringify(s));
 }
 
-function cycleTheme() {
+function themePalette(settings, theme) {
+  return { ...THEME_PALETTE_DEFAULTS[theme], ...(settings.themeColors?.[theme] || {}) };
+}
+
+function applyThemePalette(settings, theme) {
+  const palette = themePalette(settings, theme);
+  const root = document.documentElement.style;
+  root.setProperty('--control-border', palette.border);
+  root.setProperty('--control-fill', palette.fill);
+  root.setProperty('--accent', palette.accent);
+  $('btnTheme').querySelector('strong').textContent = THEME_LABELS[theme];
+  $('themeBorderColor').value = palette.border;
+  $('themeFillColor').value = palette.fill;
+  $('themeAccentColor').value = palette.accent;
+  document.querySelectorAll('[data-theme-choice]').forEach((button) => {
+    button.classList.toggle('selected', button.dataset.themeChoice === theme);
+  });
+}
+
+function selectTheme(theme) {
+  if (!THEMES.includes(theme)) return;
   const s = getSettings();
-  const idx = THEMES.indexOf(s.theme || 'sepia');
-  s.theme = THEMES[(idx + 1) % THEMES.length];
+  s.theme = theme;
   applySettings(s);
   saveSettings(s);
+}
+
+function updateThemeColor(colorName, value) {
+  if (!/^#[0-9a-f]{6}$/i.test(value)) return;
+  const s = getSettings();
+  const theme = s.theme || 'sepia';
+  s.themeColors = { ...(s.themeColors || {}) };
+  s.themeColors[theme] = { ...(s.themeColors[theme] || {}), [colorName]: value };
+  applySettings(s);
+  saveSettings(s);
+}
+
+function resetThemeColors() {
+  const s = getSettings();
+  const theme = s.theme || 'sepia';
+  if (s.themeColors?.[theme]) {
+    s.themeColors = { ...s.themeColors };
+    delete s.themeColors[theme];
+  }
+  applySettings(s);
+  saveSettings(s);
+}
+
+function toggleThemePanel() {
+  const panel = $('themePanel');
+  const isOpen = panel.classList.toggle('open');
+  $('btnTheme').setAttribute('aria-expanded', String(isOpen));
 }
 
 function adjustFont(delta) {
@@ -681,7 +734,14 @@ window.addEventListener('DOMContentLoaded', async () => {
   $('btnNext').addEventListener('click', () => gotoChapter(currentChapter + 1));
   $('btnPagePrev').addEventListener('click', () => turnPage(-1));
   $('btnPageNext').addEventListener('click', () => turnPage(1));
-  $('btnTheme').addEventListener('click', cycleTheme);
+  $('btnTheme').addEventListener('click', toggleThemePanel);
+  document.querySelectorAll('[data-theme-choice]').forEach((button) => {
+    button.addEventListener('click', () => selectTheme(button.dataset.themeChoice));
+  });
+  $('themeBorderColor').addEventListener('input', (event) => updateThemeColor('border', event.target.value));
+  $('themeFillColor').addEventListener('input', (event) => updateThemeColor('fill', event.target.value));
+  $('themeAccentColor').addEventListener('input', (event) => updateThemeColor('accent', event.target.value));
+  $('btnResetThemeColors').addEventListener('click', resetThemeColors);
   $('btnReadingMode').addEventListener('click', cycleReadingMode);
   $('btnSettings').addEventListener('click', toggleSettingsPanel);
   $('btnTypographySettings').addEventListener('click', toggleTypePanel);
