@@ -126,7 +126,7 @@ body[data-theme="dark"] {
 .format-option:disabled { opacity: .42; cursor: default; border-color: var(--border); }
 .format-option:disabled::after { content: '当前格式'; display: block; margin-top: 5px; color: var(--accent); font-size: 11px; }
 
-.content { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 20px var(--page-margin, 24px) 36px; }
+.content { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 20px var(--page-margin, 24px) var(--bottom-space, 36px); }
 .page-flow { width: 100%; }
 .content[data-reading-mode="paged"] {
   overflow-x: auto; overflow-y: hidden;

@@ -623,6 +623,7 @@ function applySettings(s) {
   document.documentElement.style.setProperty('--line-height', String(s.lineHeight ?? 1.9));
   document.documentElement.style.setProperty('--para-margin', (s.paraSpacing ?? 1) + 'em');
   document.documentElement.style.setProperty('--page-margin', (s.pageMargin ?? 24) + 'px');
+  document.documentElement.style.setProperty('--bottom-space', (s.bottomSpace ?? 36) + 'px');
   applyReadingMode(getReadingMode(s));
   // 直接使用本次修改后的对象刷新数值；此时 localStorage 可能尚未写入，
   // 若重新读取缓存会让面板滞后一拍，并在下一项操作时显示成“改错了项目”。
@@ -719,6 +720,13 @@ function adjustMargin(delta) {
   saveSettings(s);
 }
 
+function adjustBottomSpace(delta) {
+  const s = getSettings();
+  s.bottomSpace = Math.min(200, Math.max(0, (s.bottomSpace ?? 36) + delta));
+  applySettings(s);
+  saveSettings(s);
+}
+
 function cycleParagraphMode() {
   const s = getSettings();
   const current = s.paragraphMode === 'off' ? 'off' : 'optimized';
@@ -757,6 +765,7 @@ function refreshTypePanel(settings) {
   $('tpLineVal').textContent = (s.lineHeight ?? 1.9).toFixed(1);
   $('tpParaVal').textContent = (s.paraSpacing ?? 1).toFixed(1);
   $('tpMarginVal').textContent = s.pageMargin ?? 24;
+  $('tpBottomSpaceVal').textContent = s.bottomSpace ?? 36;
   const paragraphMode = s.paragraphMode === 'off' ? 'off' : 'optimized';
   $('tpParagraphMode').textContent = PARAGRAPH_MODE_LABELS[paragraphMode] || PARAGRAPH_MODE_LABELS.optimized;
   $('tpParagraphMode').dataset.mode = paragraphMode;
@@ -874,6 +883,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   $('tpParaInc').addEventListener('click', () => adjustPara(0.1));
   $('tpMarginDec').addEventListener('click', () => adjustMargin(-4));
   $('tpMarginInc').addEventListener('click', () => adjustMargin(4));
+  $('tpBottomSpaceDec').addEventListener('click', () => adjustBottomSpace(-4));
+  $('tpBottomSpaceInc').addEventListener('click', () => adjustBottomSpace(4));
   $('tpParagraphMode').addEventListener('click', cycleParagraphMode);
   $('tpSidePageButtons').addEventListener('click', toggleSidePageButtons);
   $('tpPagedWheel').addEventListener('click', togglePagedWheel);
