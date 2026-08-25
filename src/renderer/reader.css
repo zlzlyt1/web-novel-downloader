@@ -308,7 +308,7 @@ body[data-page-animation="slide"] .page-flow.page-enter-prev { animation: page-s
   transition: max-height .3s ease, padding .3s ease, opacity .2s ease, transform .3s ease;
 }
 .settings-panel.open {
-  max-height: calc(100vh - var(--topbar-h) - 22px); overflow-y: auto; overscroll-behavior: contain;
+  bottom: 10px; max-height: none; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; scrollbar-gutter: stable;
   padding: 12px 14px; opacity: 1; pointer-events: auto;
   transform: translateY(0) scale(1);
 }
@@ -356,7 +356,7 @@ body[data-page-animation="slide"] .page-flow.page-enter-prev { animation: page-s
   transition: max-height .28s ease, opacity .2s ease, padding .28s ease, transform .28s ease;
 }
 .type-panel.open {
-  max-height: 500px; opacity: 1; padding: 8px 2px 1px;
+  max-height: 720px; opacity: 1; padding: 8px 2px 1px;
   transform: translateY(0);
 }
 .tp-row { display: flex; align-items: center; gap: 10px; padding: 5px 0; }
