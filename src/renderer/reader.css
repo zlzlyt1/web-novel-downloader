@@ -142,6 +142,36 @@ body[data-theme="dark"] {
 }
 .content[data-reading-mode="paged"] .chapter-title,
 .content[data-reading-mode="paged"] .nav { break-inside: avoid; }
+
+/* 横向翻书：正文的微位移动画，以及自动隐藏的两侧圆形翻页按钮。 */
+@keyframes page-turn-next {
+  from { opacity: .72; transform: translateX(26px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes page-turn-prev {
+  from { opacity: .72; transform: translateX(-26px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.page-flow.page-turn-next { animation: page-turn-next .24s cubic-bezier(.2,.72,.22,1); }
+.page-flow.page-turn-prev { animation: page-turn-prev .24s cubic-bezier(.2,.72,.22,1); }
+.page-turn-controls {
+  position: fixed; inset: var(--topbar-h) 0 0; z-index: 15; pointer-events: none;
+  opacity: 0; transition: opacity .28s ease;
+}
+.page-turn-controls.paged.visible { opacity: 1; }
+.page-turn-btn {
+  position: absolute; top: 50%; width: 46px; height: 46px; border: 1.5px solid var(--accent); border-radius: 50%;
+  background: color-mix(in srgb, var(--panel) 86%, transparent); color: var(--accent); box-shadow: 0 3px 13px rgba(0,0,0,.16);
+  font: 400 27px/40px "Segoe UI", sans-serif; text-align: center; cursor: pointer; pointer-events: auto;
+  transform: translateY(-50%) scale(.92); transition: transform .2s ease, background .2s ease, box-shadow .2s ease;
+}
+.page-turn-prev { left: 18px; }
+.page-turn-next { right: 18px; }
+.page-turn-btn:hover, .page-turn-btn:focus-visible { background: var(--panel); transform: translateY(-50%) scale(1); outline: none; box-shadow: 0 5px 18px rgba(0,0,0,.24); }
+@media (prefers-reduced-motion: reduce) {
+  .page-flow.page-turn-next, .page-flow.page-turn-prev { animation: none; }
+  .page-turn-controls, .page-turn-btn { transition: none; }
+}
 .chapter-title { max-width: none; margin: 0 0 18px; font-size: 22px; font-weight: 600; text-align: center; word-break: break-word; }
 .chapter-body { max-width: none; width: 100%; margin: 0; font-size: var(--font-size, 18px); line-height: var(--line-height, 1.9); overflow-wrap: break-word; }
 .chapter-body p {
@@ -298,4 +328,6 @@ body[data-theme="dark"] {
   .modal-actions { flex-direction: column-reverse; }
   .modal-btn { width: 100%; }
   .format-options { grid-template-columns: 1fr; }
+  .page-turn-prev { left: 10px; }
+  .page-turn-next { right: 10px; }
 }

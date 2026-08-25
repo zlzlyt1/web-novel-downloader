@@ -1,14 +1,17 @@
-Web Novel Downloader 2.2.5 (Windows x64)
+Web Novel Downloader 2.2.6 (Windows x64)
 
 Files
-1. 全网小说下载器 Setup 2.2.5.exe
+1. 全网小说下载器 Setup 2.2.6.exe
    Installer. Choose an installation directory and create desktop/Start Menu shortcuts.
 
-2. 全网小说下载器 2.2.5.exe
+2. 全网小说下载器 2.2.6.exe
    Portable edition. No installation is required; double-click to run.
 
 Verification
 Use SHA256SUMS.txt in this folder to verify downloaded files.
+
+2.2.6 feature
+Horizontal book pages now animate while turning. Circular outlined side buttons with `<` and `>` arrows appear during activity and hide automatically.
 
 2.2.5 feature
 Theme, page layout, format conversion, typography, and page-key controls are now grouped under an animated expandable Settings panel in the reader.

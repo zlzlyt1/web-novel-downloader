@@ -10,6 +10,8 @@ let sidebarMode = 'toc';
 let removeBookResolver = null;
 let scrollSaveTimer = null;
 let wheelPageLocked = false;
+let pageControlsTimer = null;
+let pageAnimationTimer = null;
 
 const THEMES = ['light', 'sepia', 'dark'];
 const PARAGRAPH_MODES = ['off', 'optimized'];
@@ -136,21 +138,26 @@ function turnPage(direction) {
   const content = $('content');
   const readingMode = getReadingMode();
   if (readingMode === 'paged') {
+    revealPageTurnControls();
     const maxScrollLeft = Math.max(0, content.scrollWidth - content.clientWidth);
     const atStart = content.scrollLeft <= 2;
     const atEnd = content.scrollLeft >= maxScrollLeft - 2;
     if (direction < 0 && atStart && currentChapter > 0) {
+      playPageTurnAnimation(direction);
       gotoChapter(currentChapter - 1);
       content.scrollLeft = Math.max(0, content.scrollWidth - content.clientWidth);
       saveProgress();
       return;
     }
     if (direction > 0 && atEnd && currentChapter < book.chapters.length - 1) {
+      playPageTurnAnimation(direction);
       gotoChapter(currentChapter + 1);
       return;
     }
     const step = Math.max(1, content.clientWidth);
-    content.scrollLeft = Math.max(0, Math.min(maxScrollLeft, content.scrollLeft + direction * step));
+    const nextScrollLeft = Math.max(0, Math.min(maxScrollLeft, content.scrollLeft + direction * step));
+    if (nextScrollLeft !== content.scrollLeft) playPageTurnAnimation(direction);
+    content.scrollLeft = nextScrollLeft;
     saveProgress();
     return;
   }
@@ -448,13 +455,44 @@ function getReadingMode(settings = getSettings()) {
   return settings.readingMode === 'paged' ? 'paged' : 'scroll';
 }
 
-function applyReadingMode(mode) {
+function updatePageTurnControls(show = false) {
+  const controls = $('pageTurnControls');
+  const isPaged = getReadingMode() === 'paged';
+  controls.classList.toggle('paged', isPaged);
+  if (!isPaged) {
+    controls.classList.remove('visible');
+    if (pageControlsTimer) clearTimeout(pageControlsTimer);
+    return;
+  }
+  if (show && currentChapter >= 0) revealPageTurnControls();
+}
+
+function revealPageTurnControls() {
+  if (getReadingMode() !== 'paged') return;
+  const controls = $('pageTurnControls');
+  controls.classList.add('paged', 'visible');
+  if (pageControlsTimer) clearTimeout(pageControlsTimer);
+  pageControlsTimer = setTimeout(() => controls.classList.remove('visible'), 1800);
+}
+
+function playPageTurnAnimation(direction) {
+  const flow = $('pageFlow');
+  const animationClass = direction > 0 ? 'page-turn-next' : 'page-turn-prev';
+  flow.classList.remove('page-turn-next', 'page-turn-prev');
+  void flow.offsetWidth;
+  flow.classList.add(animationClass);
+  if (pageAnimationTimer) clearTimeout(pageAnimationTimer);
+  pageAnimationTimer = setTimeout(() => flow.classList.remove(animationClass), 280);
+}
+
+function applyReadingMode(mode, shouldReveal = false) {
   const normalized = mode === 'paged' ? 'paged' : 'scroll';
   const content = $('content');
   content.dataset.readingMode = normalized;
   const button = $('btnReadingMode');
   button.querySelector('strong').textContent = READING_MODE_LABELS[normalized];
   button.title = `切换翻页方式（当前：${normalized === 'paged' ? '左右翻书' : '上下滚动'}）`;
+  updatePageTurnControls(shouldReveal);
 }
 
 function cycleReadingMode() {
@@ -469,7 +507,7 @@ function cycleReadingMode() {
   saveProgress();
   settings.readingMode = READING_MODES[(READING_MODES.indexOf(current) + 1) % READING_MODES.length];
   saveSettings(settings);
-  applyReadingMode(settings.readingMode);
+  applyReadingMode(settings.readingMode, true);
   requestAnimationFrame(() => requestAnimationFrame(() => {
     if (settings.readingMode === 'paged') {
       content.scrollTop = 0;
@@ -641,6 +679,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   $('overlay').addEventListener('click', closeToc);
   $('btnPrev').addEventListener('click', () => gotoChapter(currentChapter - 1));
   $('btnNext').addEventListener('click', () => gotoChapter(currentChapter + 1));
+  $('btnPagePrev').addEventListener('click', () => turnPage(-1));
+  $('btnPageNext').addEventListener('click', () => turnPage(1));
   $('btnTheme').addEventListener('click', cycleTheme);
   $('btnReadingMode').addEventListener('click', cycleReadingMode);
   $('btnSettings').addEventListener('click', toggleSettingsPanel);
@@ -704,6 +744,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') saveProgress();
   });
+  document.addEventListener('mousemove', () => revealPageTurnControls());
   // 键盘翻页/翻章
   window.addEventListener('keydown', (e) => {
     if (finishKeyCapture(e)) return;
