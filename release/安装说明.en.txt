@@ -1,14 +1,17 @@
-Web Novel Downloader 2.2.3 (Windows x64)
+Web Novel Downloader 2.2.4 (Windows x64)
 
 Files
-1. 全网小说下载器 Setup 2.2.3.exe
+1. 全网小说下载器 Setup 2.2.4.exe
    Installer. Choose an installation directory and create desktop/Start Menu shortcuts.
 
-2. 全网小说下载器 2.2.3.exe
+2. 全网小说下载器 2.2.4.exe
    Portable edition. No installation is required; double-click to run.
 
 Verification
 Use SHA256SUMS.txt in this folder to verify downloaded files.
+
+2.2.4 feature
+The top bar now switches between vertical scrolling and horizontally paginated book reading. In horizontal mode, the wheel and customized page keys move one window-sized page at a time; arrow keys remain chapter navigation.
 
 2.2.3 feature
 Left and right arrow keys now turn pages and cross chapter boundaries. Existing chapter buttons and customizable page-key bindings remain available.

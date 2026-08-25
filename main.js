@@ -53,12 +53,21 @@ function scheduleReaderStateSave() {
   }, 350);
 }
 
-function updateReaderProgress({ filePath, chapter, scrollTop } = {}) {
+function updateReaderProgress({ filePath, chapter, scrollTop, scrollLeft, readingMode } = {}) {
   const key = readerProgressKey(filePath);
   const safeChapter = Math.max(0, Math.floor(Number(chapter)));
   const safeScrollTop = Math.max(0, Math.round(Number(scrollTop) || 0));
+  const safeScrollLeft = Math.max(0, Math.round(Number(scrollLeft) || 0));
+  const safeReadingMode = readingMode === 'paged' ? 'paged' : 'scroll';
   if (!key || !Number.isFinite(safeChapter)) return false;
-  readerProgress[key] = { filePath: path.resolve(filePath), chapter: safeChapter, scrollTop: safeScrollTop, updatedAt: new Date().toISOString() };
+  readerProgress[key] = {
+    filePath: path.resolve(filePath),
+    chapter: safeChapter,
+    scrollTop: safeScrollTop,
+    scrollLeft: safeScrollLeft,
+    readingMode: safeReadingMode,
+    updatedAt: new Date().toISOString(),
+  };
   const keys = Object.keys(readerProgress);
   if (keys.length > 1000) {
     keys.sort((a, b) => String(readerProgress[b]?.updatedAt || '').localeCompare(String(readerProgress[a]?.updatedAt || '')))

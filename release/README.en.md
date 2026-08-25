@@ -2,7 +2,7 @@
 
 Language: [简体中文](README.md) · [English](README.en.md)
 
-Current stable version: **2.2.3**
+Current stable version: **2.2.4**
 
 Download the Windows x64 installer and portable executable from [GitHub Releases](https://github.com/zlzlyt1/web-novel-downloader/releases).
 
@@ -10,8 +10,14 @@ The repository keeps installation instructions and SHA-256 checksums. See the ro
 
 ## Included packages
 
-- `全网小说下载器 Setup 2.2.3.exe` — installer with desktop and Start Menu shortcuts.
-- `全网小说下载器 2.2.3.exe` — portable edition; no installation required.
+- `全网小说下载器 Setup 2.2.4.exe` — installer with desktop and Start Menu shortcuts.
+- `全网小说下载器 2.2.4.exe` — portable edition; no installation required.
+
+## 2.2.4 horizontal book pages
+
+- Adds a top-bar button for switching between vertical scrolling and horizontal book pages.
+- Horizontal mode automatically lays text into window-sized pages; the wheel and customized page keys move one page at a time.
+- Left and right arrow keys return to chapter navigation.
 
 ## 2.2.3 left/right page turning
 

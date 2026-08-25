@@ -9,10 +9,13 @@ let sourceFormat = 'txt';
 let sidebarMode = 'toc';
 let removeBookResolver = null;
 let scrollSaveTimer = null;
+let wheelPageLocked = false;
 
 const THEMES = ['light', 'sepia', 'dark'];
 const PARAGRAPH_MODES = ['off', 'optimized'];
 const PARAGRAPH_MODE_LABELS = { off: '关闭', optimized: '开启' };
+const READING_MODES = ['scroll', 'paged'];
+const READING_MODE_LABELS = { scroll: '上下', paged: '左右' };
 const PAGE_KEY_DEFAULTS = { prevPageKey: 'PageUp', nextPageKey: 'PageDown' };
 let keyCaptureTarget = null;
 const VOLUME_RE = /^第\s*[0-9一二三四五六七八九十百千万零]+\s*[卷集]/;
@@ -131,6 +134,26 @@ function finishKeyCapture(event) {
 function turnPage(direction) {
   if (currentChapter < 0) return;
   const content = $('content');
+  const readingMode = getReadingMode();
+  if (readingMode === 'paged') {
+    const maxScrollLeft = Math.max(0, content.scrollWidth - content.clientWidth);
+    const atStart = content.scrollLeft <= 2;
+    const atEnd = content.scrollLeft >= maxScrollLeft - 2;
+    if (direction < 0 && atStart && currentChapter > 0) {
+      gotoChapter(currentChapter - 1);
+      content.scrollLeft = Math.max(0, content.scrollWidth - content.clientWidth);
+      saveProgress();
+      return;
+    }
+    if (direction > 0 && atEnd && currentChapter < book.chapters.length - 1) {
+      gotoChapter(currentChapter + 1);
+      return;
+    }
+    const step = Math.max(1, content.clientWidth);
+    content.scrollLeft = Math.max(0, Math.min(maxScrollLeft, content.scrollLeft + direction * step));
+    saveProgress();
+    return;
+  }
   const maxScroll = Math.max(0, content.scrollHeight - content.clientHeight);
   const atStart = content.scrollTop <= 2;
   const atEnd = content.scrollTop >= maxScroll - 2;
@@ -348,7 +371,7 @@ async function renderShelf() {
   }
 }
 
-function renderChapter(i, { scrollTop = 0, persist = true } = {}) {
+function renderChapter(i, { scrollTop = 0, scrollLeft = 0, persist = true } = {}) {
   currentChapter = i;
   const ch = book.chapters[i];
   $('chapterTitle').textContent = ch.title || '正文';
@@ -382,8 +405,9 @@ function renderChapter(i, { scrollTop = 0, persist = true } = {}) {
   // 滚动目录到当前
   const active = sidebarMode === 'toc' ? document.querySelector('#toc li.active') : null;
   if (active && active.scrollIntoView) active.scrollIntoView({ block: 'nearest' });
-  // 回到顶部
-  $('content').scrollTop = Math.max(0, Number(scrollTop) || 0);
+  const content = $('content');
+  content.scrollTop = Math.max(0, Number(scrollTop) || 0);
+  content.scrollLeft = Math.max(0, Number(scrollLeft) || 0);
   if (persist) saveProgress();
 }
 
@@ -420,6 +444,43 @@ function closeToc() {
 function getSettings() {
   try { return JSON.parse(localStorage.getItem('reader-settings')) || {}; } catch (_) { return {}; }
 }
+function getReadingMode(settings = getSettings()) {
+  return settings.readingMode === 'paged' ? 'paged' : 'scroll';
+}
+
+function applyReadingMode(mode) {
+  const normalized = mode === 'paged' ? 'paged' : 'scroll';
+  const content = $('content');
+  content.dataset.readingMode = normalized;
+  const button = $('btnReadingMode');
+  button.textContent = READING_MODE_LABELS[normalized];
+  button.title = `切换翻页方式（当前：${normalized === 'paged' ? '左右翻书' : '上下滚动'}）`;
+}
+
+function cycleReadingMode() {
+  const content = $('content');
+  const settings = getSettings();
+  const current = getReadingMode(settings);
+  const oldMax = current === 'paged'
+    ? Math.max(0, content.scrollWidth - content.clientWidth)
+    : Math.max(0, content.scrollHeight - content.clientHeight);
+  const oldPosition = current === 'paged' ? content.scrollLeft : content.scrollTop;
+  const ratio = oldMax > 0 ? oldPosition / oldMax : 0;
+  saveProgress();
+  settings.readingMode = READING_MODES[(READING_MODES.indexOf(current) + 1) % READING_MODES.length];
+  saveSettings(settings);
+  applyReadingMode(settings.readingMode);
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    if (settings.readingMode === 'paged') {
+      content.scrollTop = 0;
+      content.scrollLeft = ratio * Math.max(0, content.scrollWidth - content.clientWidth);
+    } else {
+      content.scrollLeft = 0;
+      content.scrollTop = ratio * Math.max(0, content.scrollHeight - content.clientHeight);
+    }
+    saveProgress();
+  }));
+}
 function applySettings(s) {
   const theme = s.theme || 'sepia';
   document.body.dataset.theme = theme;
@@ -427,6 +488,7 @@ function applySettings(s) {
   document.documentElement.style.setProperty('--line-height', String(s.lineHeight ?? 1.9));
   document.documentElement.style.setProperty('--para-margin', (s.paraSpacing ?? 1) + 'em');
   document.documentElement.style.setProperty('--page-margin', (s.pageMargin ?? 24) + 'px');
+  applyReadingMode(getReadingMode(s));
   // 直接使用本次修改后的对象刷新数值；此时 localStorage 可能尚未写入，
   // 若重新读取缓存会让面板滞后一拍，并在下一项操作时显示成“改错了项目”。
   refreshTypePanel(s);
@@ -512,7 +574,13 @@ function progressKey() {
 }
 function saveProgress() {
   if (!currentFile || currentChapter < 0) return;
-  const progress = { chapter: currentChapter, scrollTop: $('content').scrollTop || 0 };
+  const content = $('content');
+  const progress = {
+    chapter: currentChapter,
+    scrollTop: content.scrollTop || 0,
+    scrollLeft: content.scrollLeft || 0,
+    readingMode: getReadingMode(),
+  };
   // localStorage 只作为旧版本兼容备份；长期进度由主进程写入 AppData/reader-state.json。
   localStorage.setItem(progressKey(), JSON.stringify(progress));
   window.api.saveReaderProgress({ filePath: currentFile, ...progress });
@@ -547,7 +615,7 @@ async function loadFile(filePath, silent = false) {
   renderToc();
   const saved = await loadProgress();
   const start = (typeof saved.chapter === 'number' && saved.chapter < book.chapters.length) ? saved.chapter : 0;
-  renderChapter(start, { scrollTop: saved.scrollTop, persist: false });
+  renderChapter(start, { scrollTop: saved.scrollTop, scrollLeft: saved.scrollLeft, persist: false });
   saveProgress();
   await window.api.touchReaderBook({ filePath: res.path, title: book.title, chapterCount: book.chapters.length });
 }
@@ -561,6 +629,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   $('btnPrev').addEventListener('click', () => gotoChapter(currentChapter - 1));
   $('btnNext').addEventListener('click', () => gotoChapter(currentChapter + 1));
   $('btnTheme').addEventListener('click', cycleTheme);
+  $('btnReadingMode').addEventListener('click', cycleReadingMode);
   $('btnType').addEventListener('click', toggleTypePanel);
   $('tpFontDec').addEventListener('click', () => adjustFont(-1));
   $('tpFontInc').addEventListener('click', () => adjustFont(1));
@@ -604,6 +673,16 @@ window.addEventListener('DOMContentLoaded', async () => {
       saveProgress();
     }, 450);
   });
+  $('content').addEventListener('wheel', (event) => {
+    if (getReadingMode() !== 'paged' || event.ctrlKey) return;
+    const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+    if (Math.abs(delta) < 8) return;
+    event.preventDefault();
+    if (wheelPageLocked) return;
+    wheelPageLocked = true;
+    turnPage(delta > 0 ? 1 : -1);
+    setTimeout(() => { wheelPageLocked = false; }, 320);
+  }, { passive: false });
   window.addEventListener('beforeunload', saveProgress);
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') saveProgress();
@@ -634,15 +713,15 @@ window.addEventListener('DOMContentLoaded', async () => {
       turnPage(1);
       return;
     }
-    // 左右方向键作为内置翻页快捷键；章节按钮仍负责直接跳章。
+    // 左右方向键保留原有的章节切换；“左右”指横向书页布局，而非固定按键。
     if (e.key === 'ArrowLeft') {
       e.preventDefault();
-      turnPage(-1);
+      gotoChapter(currentChapter - 1);
       return;
     }
     if (e.key === 'ArrowRight') {
       e.preventDefault();
-      turnPage(1);
+      gotoChapter(currentChapter + 1);
       return;
     }
   });

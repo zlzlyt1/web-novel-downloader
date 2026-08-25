@@ -4,7 +4,7 @@
 
 ## 简体中文
 
-当前稳定版本：**2.2.3**
+当前稳定版本：**2.2.4**
 
 安装版和便携版 EXE 请从 GitHub Releases 下载：
 
@@ -14,4 +14,4 @@
 
 ## English
 
-Download the Windows x64 installer and portable edition from [GitHub Releases](https://github.com/zlzlyt1/web-novel-downloader/releases). The installer creates shortcuts; the portable edition needs no installation. `SHA256SUMS.txt` verifies file integrity. Version 2.2.3 adds left/right arrow page turning in addition to customizable previous/next page keys.
+Download the Windows x64 installer and portable edition from [GitHub Releases](https://github.com/zlzlyt1/web-novel-downloader/releases). The installer creates shortcuts; the portable edition needs no installation. `SHA256SUMS.txt` verifies file integrity. Version 2.2.4 adds switchable vertical scrolling and horizontally paginated book reading.

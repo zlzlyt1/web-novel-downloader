@@ -16,6 +16,7 @@
         <button id="btnOpen" class="icon-btn" title="打开 EPUB / Markdown / TXT 文件">打开</button>
         <button id="btnConvert" class="icon-btn" title="在 EPUB / Markdown / TXT 之间转换" disabled>转换</button>
         <button id="btnTheme" class="icon-btn" title="切换主题">主题</button>
+        <button id="btnReadingMode" class="icon-btn" title="切换翻页方式（当前：上下滚动）">上下</button>
         <button id="btnType" class="icon-btn" title="排版设置（字号 / 行距 / 段距）">排版</button>
       </div>
     </header>
@@ -95,15 +96,17 @@
       </section>
     </div>
 
-    <main class="content" id="content">
-      <div class="chapter-title" id="chapterTitle">—</div>
-      <div class="chapter-body" id="chapterBody">
-        <p class="placeholder">请在左上角打开一个 EPUB、Markdown 或 TXT 文件开始阅读。</p>
-      </div>
-      <div class="nav">
-        <button id="btnPrev" class="btn">上一章</button>
-        <span id="navPos" class="nav-pos">—</span>
-        <button id="btnNext" class="btn">下一章</button>
+    <main class="content" id="content" data-reading-mode="scroll">
+      <div class="page-flow" id="pageFlow">
+        <div class="chapter-title" id="chapterTitle">—</div>
+        <div class="chapter-body" id="chapterBody">
+          <p class="placeholder">请在左上角打开一个 EPUB、Markdown 或 TXT 文件开始阅读。</p>
+        </div>
+        <div class="nav">
+          <button id="btnPrev" class="btn">上一章</button>
+          <span id="navPos" class="nav-pos">—</span>
+          <button id="btnNext" class="btn">下一章</button>
+        </div>
       </div>
     </main>
   </div>

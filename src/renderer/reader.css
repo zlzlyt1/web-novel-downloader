@@ -124,6 +124,24 @@ body[data-theme="dark"] {
 .format-option:disabled::after { content: '当前格式'; display: block; margin-top: 5px; color: var(--accent); font-size: 11px; }
 
 .content { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 20px var(--page-margin, 24px) 36px; }
+.page-flow { width: 100%; }
+.content[data-reading-mode="paged"] {
+  overflow-x: auto; overflow-y: hidden;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+.content[data-reading-mode="paged"]::-webkit-scrollbar { display: none; }
+.content[data-reading-mode="paged"] .page-flow {
+  width: 100%; height: 100%;
+  column-width: calc(100vw - (2 * var(--page-margin, 24px)));
+  column-gap: calc(2 * var(--page-margin, 24px));
+  column-fill: auto;
+}
+.content[data-reading-mode="paged"] .chapter-body p {
+  orphans: 2; widows: 2;
+}
+.content[data-reading-mode="paged"] .chapter-title,
+.content[data-reading-mode="paged"] .nav { break-inside: avoid; }
 .chapter-title { max-width: none; margin: 0 0 18px; font-size: 22px; font-weight: 600; text-align: center; word-break: break-word; }
 .chapter-body { max-width: none; width: 100%; margin: 0; font-size: var(--font-size, 18px); line-height: var(--line-height, 1.9); overflow-wrap: break-word; }
 .chapter-body p {
