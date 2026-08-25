@@ -4,7 +4,7 @@
 
 ## 简体中文
 
-当前稳定版本：**2.2.8**
+当前稳定版本：**2.2.9**
 
 安装版和便携版 EXE 请从 GitHub Releases 下载：
 
@@ -14,4 +14,4 @@
 
 ## English
 
-Download the Windows x64 installer and portable edition from [GitHub Releases](https://github.com/zlzlyt1/web-novel-downloader/releases). The installer creates shortcuts; the portable edition needs no installation. `SHA256SUMS.txt` verifies file integrity. Version 2.2.8 renames accent color to function color and applies it to expand arrows, reader states, and downloader actions; control border and fill colors also apply throughout the downloader.
+Download the Windows x64 installer and portable edition from [GitHub Releases](https://github.com/zlzlyt1/web-novel-downloader/releases). The installer creates shortcuts; the portable edition needs no installation. `SHA256SUMS.txt` verifies file integrity. Version 2.2.9 replaces horizontal page glyphs with centered SVG arrows and applies the function color directly to both arrows and circular outlines.

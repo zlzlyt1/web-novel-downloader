@@ -555,6 +555,7 @@ function applyThemePalette(settings, theme) {
   const root = document.documentElement.style;
   root.setProperty('--control-border', palette.border);
   root.setProperty('--control-fill', palette.fill);
+  root.setProperty('--function-color', palette.function);
   root.setProperty('--accent', palette.function);
   $('btnTheme').querySelector('strong').textContent = THEME_LABELS[theme];
   $('themeBorderColor').value = palette.border;

@@ -25,6 +25,7 @@ function applyControlPalette(theme) {
   const root = document.documentElement.style;
   root.setProperty('--control-border', stored.border || fallback.border);
   root.setProperty('--control-fill', stored.fill || fallback.fill);
+  root.setProperty('--function-color', functionColor);
   root.setProperty('--primary', functionColor);
   root.setProperty('--primary-dark', `color-mix(in srgb, ${functionColor} 84%, #000)`);
 }

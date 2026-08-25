@@ -177,10 +177,12 @@ body[data-theme="dark"] {
 .page-turn-controls.paged.visible { opacity: 1; }
 .page-turn-btn {
   position: absolute; top: 50%; display: grid; place-items: center; padding: 0; width: 46px; height: 46px; border: 1.5px solid var(--control-border); border-radius: 50%;
-  background: color-mix(in srgb, var(--control-fill) 88%, transparent); color: var(--accent); box-shadow: 0 3px 13px rgba(0,0,0,.16);
-  font: 400 27px/1 "Segoe UI", sans-serif; cursor: pointer; pointer-events: auto;
+  background: color-mix(in srgb, var(--control-fill) 88%, transparent); color: var(--function-color, var(--accent)); box-shadow: 0 3px 13px rgba(0,0,0,.16);
+  cursor: pointer; pointer-events: auto;
   transform: translateY(-50%) scale(.92); transition: transform .2s ease, background .2s ease, box-shadow .2s ease;
 }
+.page-turn-btn svg { display: block; width: 25px; height: 25px; stroke: currentColor; stroke-width: 2.25; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+.page-turn-btn { border-color: var(--function-color, var(--accent)); }
 .page-turn-prev { left: 18px; }
 .page-turn-next { right: 18px; }
 .page-turn-btn:hover, .page-turn-btn:focus-visible { background: var(--panel); transform: translateY(-50%) scale(1); outline: none; box-shadow: 0 5px 18px rgba(0,0,0,.24); }
