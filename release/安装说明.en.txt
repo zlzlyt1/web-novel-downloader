@@ -1,14 +1,17 @@
-Web Novel Downloader 2.2.7 (Windows x64)
+Web Novel Downloader 2.2.8 (Windows x64)
 
 Files
-1. 全网小说下载器 Setup 2.2.7.exe
+1. 全网小说下载器 Setup 2.2.8.exe
    Installer. Choose an installation directory and create desktop/Start Menu shortcuts.
 
-2. 全网小说下载器 2.2.7.exe
+2. 全网小说下载器 2.2.8.exe
    Portable edition. No installation is required; double-click to run.
 
 Verification
 Use SHA256SUMS.txt in this folder to verify downloaded files.
+
+2.2.8 feature
+“Accent color” is now named “function color” beside control border and fill. It colors expand arrows, reader states, page arrows, and downloader primary actions; border and fill colors also apply to downloader controls.
 
 2.2.7 feature
 Horizontal pages now keep ordinary paragraphs and content blocks together whenever they fit on one page; oversized blocks can still flow safely. The floating `<` and `>` arrows are centered. In Settings → Theme, light, sepia, and dark themes each provide separately saved custom control border, fill, and accent colors.

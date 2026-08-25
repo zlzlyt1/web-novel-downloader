@@ -12,8 +12,25 @@ let activeUpdateButton = null;
 function getTheme() {
   try { return localStorage.getItem('dl-theme') || 'light'; } catch (_) { return 'light'; }
 }
+const DOWNLOADER_PALETTE_DEFAULTS = {
+  light: { border: '#e6e8ec', fill: '#ffffff', function: '#e84c3d' },
+  dark: { border: '#3a3a3c', fill: '#1c1c1e', function: '#ff7b6b' },
+};
+function applyControlPalette(theme) {
+  let settings = {};
+  try { settings = JSON.parse(localStorage.getItem('reader-settings')) || {}; } catch (_) {}
+  const stored = settings.themeColors?.[theme] || {};
+  const fallback = DOWNLOADER_PALETTE_DEFAULTS[theme] || DOWNLOADER_PALETTE_DEFAULTS.light;
+  const functionColor = stored.function || stored.accent || fallback.function;
+  const root = document.documentElement.style;
+  root.setProperty('--control-border', stored.border || fallback.border);
+  root.setProperty('--control-fill', stored.fill || fallback.fill);
+  root.setProperty('--primary', functionColor);
+  root.setProperty('--primary-dark', `color-mix(in srgb, ${functionColor} 84%, #000)`);
+}
 function applyTheme(theme) {
   document.body.dataset.theme = theme;
+  applyControlPalette(theme);
   const dark = theme === 'dark';
   $('iconMoon').classList.toggle('hidden', dark);
   $('iconSun').classList.toggle('hidden', !dark);
@@ -361,4 +378,7 @@ window.addEventListener('DOMContentLoaded', () => {
   $('btnOpenAllResults').addEventListener('click', () => { if (lastSearchUrl) window.api.openExternal(lastSearchUrl); });
   $('url').addEventListener('keydown', (e) => { if (e.key === 'Enter') fetchBook(); });
   $('searchTitle').addEventListener('keydown', (e) => { if (e.key === 'Enter') searchByTitle(); });
+  window.addEventListener('storage', (event) => {
+    if (event.key === 'reader-settings') applyControlPalette(getTheme());
+  });
 });

@@ -16,9 +16,9 @@ let pageAnimationTimer = null;
 const THEMES = ['light', 'sepia', 'dark'];
 const THEME_LABELS = { light: '浅色', sepia: '羊皮纸', dark: '深色' };
 const THEME_PALETTE_DEFAULTS = {
-  light: { border: '#e6e8ec', fill: '#ffffff', accent: '#e84c3d' },
-  sepia: { border: '#ddd2bc', fill: '#f5f0e6', accent: '#b08968' },
-  dark: { border: '#3a3a3c', fill: '#1c1c1e', accent: '#ff7b6b' },
+  light: { border: '#e6e8ec', fill: '#ffffff', function: '#e84c3d' },
+  sepia: { border: '#ddd2bc', fill: '#f5f0e6', function: '#b08968' },
+  dark: { border: '#3a3a3c', fill: '#1c1c1e', function: '#ff7b6b' },
 };
 const PARAGRAPH_MODES = ['off', 'optimized'];
 const PARAGRAPH_MODE_LABELS = { off: '关闭', optimized: '开启' };
@@ -545,7 +545,9 @@ function saveSettings(s) {
 }
 
 function themePalette(settings, theme) {
-  return { ...THEME_PALETTE_DEFAULTS[theme], ...(settings.themeColors?.[theme] || {}) };
+  const stored = settings.themeColors?.[theme] || {};
+  // 兼容 2.2.7 已保存的 accent 字段；新设置统一称为“功能颜色”。
+  return { ...THEME_PALETTE_DEFAULTS[theme], ...stored, function: stored.function || stored.accent || THEME_PALETTE_DEFAULTS[theme].function };
 }
 
 function applyThemePalette(settings, theme) {
@@ -553,11 +555,11 @@ function applyThemePalette(settings, theme) {
   const root = document.documentElement.style;
   root.setProperty('--control-border', palette.border);
   root.setProperty('--control-fill', palette.fill);
-  root.setProperty('--accent', palette.accent);
+  root.setProperty('--accent', palette.function);
   $('btnTheme').querySelector('strong').textContent = THEME_LABELS[theme];
   $('themeBorderColor').value = palette.border;
   $('themeFillColor').value = palette.fill;
-  $('themeAccentColor').value = palette.accent;
+  $('themeAccentColor').value = palette.function;
   document.querySelectorAll('[data-theme-choice]').forEach((button) => {
     button.classList.toggle('selected', button.dataset.themeChoice === theme);
   });
@@ -740,7 +742,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   });
   $('themeBorderColor').addEventListener('input', (event) => updateThemeColor('border', event.target.value));
   $('themeFillColor').addEventListener('input', (event) => updateThemeColor('fill', event.target.value));
-  $('themeAccentColor').addEventListener('input', (event) => updateThemeColor('accent', event.target.value));
+  $('themeAccentColor').addEventListener('input', (event) => updateThemeColor('function', event.target.value));
   $('btnResetThemeColors').addEventListener('click', resetThemeColors);
   $('btnReadingMode').addEventListener('click', cycleReadingMode);
   $('btnSettings').addEventListener('click', toggleSettingsPanel);
