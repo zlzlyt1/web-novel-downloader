@@ -2,7 +2,7 @@
 
 Language: [简体中文](README.md) · [English](README.en.md)
 
-Current stable version: **2.2.2**
+Current stable version: **2.2.3**
 
 Download the Windows x64 installer and portable executable from [GitHub Releases](https://github.com/zlzlyt1/web-novel-downloader/releases).
 
@@ -10,8 +10,13 @@ The repository keeps installation instructions and SHA-256 checksums. See the ro
 
 ## Included packages
 
-- `全网小说下载器 Setup 2.2.2.exe` — installer with desktop and Start Menu shortcuts.
-- `全网小说下载器 2.2.2.exe` — portable edition; no installation required.
+- `全网小说下载器 Setup 2.2.3.exe` — installer with desktop and Start Menu shortcuts.
+- `全网小说下载器 2.2.3.exe` — portable edition; no installation required.
+
+## 2.2.3 left/right page turning
+
+- Left and right arrow keys now turn the current page and cross chapter boundaries automatically.
+- Existing chapter navigation buttons and customizable page-key bindings remain available.
 
 ## 2.2.2 page turning and key bindings
 

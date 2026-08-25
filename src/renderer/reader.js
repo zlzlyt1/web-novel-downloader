@@ -634,8 +634,17 @@ window.addEventListener('DOMContentLoaded', async () => {
       turnPage(1);
       return;
     }
-    if (e.key === 'ArrowLeft') gotoChapter(currentChapter - 1);
-    if (e.key === 'ArrowRight') gotoChapter(currentChapter + 1);
+    // 左右方向键作为内置翻页快捷键；章节按钮仍负责直接跳章。
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      turnPage(-1);
+      return;
+    }
+    if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      turnPage(1);
+      return;
+    }
   });
 
   const initial = await window.api.getReaderFile();
