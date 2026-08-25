@@ -11,6 +11,7 @@ let removeBookResolver = null;
 let scrollSaveTimer = null;
 let pageControlsTimer = null;
 let pageAnimationTimer = null;
+let pageAnimationRunning = false;
 
 const THEMES = ['light', 'sepia', 'dark'];
 const THEME_LABELS = { light: '浅色', sepia: '羊皮纸', dark: '深色' };
@@ -193,22 +194,25 @@ function turnPage(direction) {
     const atStart = content.scrollLeft <= 2;
     const atEnd = content.scrollLeft >= maxScrollLeft - 2;
     if (direction < 0 && atStart && currentChapter > 0) {
-      playPageTurnAnimation(direction);
-      gotoChapter(currentChapter - 1);
-      content.scrollLeft = Math.max(0, content.scrollWidth - content.clientWidth);
-      saveProgress();
+      playPageTurnAnimation(direction, () => {
+        gotoChapter(currentChapter - 1);
+        content.scrollLeft = Math.max(0, content.scrollWidth - content.clientWidth);
+        saveProgress();
+      });
       return;
     }
     if (direction > 0 && atEnd && currentChapter < book.chapters.length - 1) {
-      playPageTurnAnimation(direction);
-      gotoChapter(currentChapter + 1);
+      playPageTurnAnimation(direction, () => gotoChapter(currentChapter + 1));
       return;
     }
     const step = Math.max(1, content.clientWidth);
     const nextScrollLeft = Math.max(0, Math.min(maxScrollLeft, content.scrollLeft + direction * step));
-    if (nextScrollLeft !== content.scrollLeft) playPageTurnAnimation(direction);
-    content.scrollLeft = nextScrollLeft;
-    saveProgress();
+    if (nextScrollLeft !== content.scrollLeft) {
+      playPageTurnAnimation(direction, () => {
+        content.scrollLeft = nextScrollLeft;
+        saveProgress();
+      });
+    }
     return;
   }
   const maxScroll = Math.max(0, content.scrollHeight - content.clientHeight);
@@ -528,14 +532,32 @@ function revealPageTurnControls() {
   pageControlsTimer = setTimeout(() => controls.classList.remove('visible'), 1800);
 }
 
-function playPageTurnAnimation(direction) {
+function playPageTurnAnimation(direction, commitTurn) {
+  if (pageAnimationRunning) return false;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    commitTurn();
+    return true;
+  }
   const flow = $('pageFlow');
-  const animationClass = direction > 0 ? 'page-turn-next' : 'page-turn-prev';
-  flow.classList.remove('page-turn-next', 'page-turn-prev');
+  const exitClass = direction > 0 ? 'page-exit-next' : 'page-exit-prev';
+  const enterClass = direction > 0 ? 'page-enter-next' : 'page-enter-prev';
+  pageAnimationRunning = true;
+  flow.classList.remove('page-exit-next', 'page-exit-prev', 'page-enter-next', 'page-enter-prev');
   void flow.offsetWidth;
-  flow.classList.add(animationClass);
+  flow.classList.add(exitClass);
   if (pageAnimationTimer) clearTimeout(pageAnimationTimer);
-  pageAnimationTimer = setTimeout(() => flow.classList.remove(animationClass), 280);
+  pageAnimationTimer = setTimeout(() => {
+    flow.classList.remove(exitClass);
+    commitTurn();
+    void flow.offsetWidth;
+    flow.classList.add(enterClass);
+    pageAnimationTimer = setTimeout(() => {
+      flow.classList.remove(enterClass);
+      pageAnimationRunning = false;
+      pageAnimationTimer = null;
+    }, 310);
+  }, 185);
+  return true;
 }
 
 function applyReadingMode(mode, shouldReveal = false) {
