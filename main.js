@@ -17,6 +17,7 @@ let readerProgress = {};
 let readerStateSaveTimer = null;
 let currentTheme = 'light'; // 'light' | 'dark'
 let updateCheckStarted = false;
+const UPDATE_APPLY_FLAG = '--apply-update';
 
 // 下载、搜索与电子书转换只会在用户触发相应操作后使用。延迟载入可缩短低配置电脑的首屏时间。
 function crawler() { return require('./src/crawler/downloader'); }
@@ -24,6 +25,37 @@ function txtTools() { return require('./src/crawler/txt'); }
 function libraryTools() { return require('./src/crawler/library'); }
 function bookFormats() { return require('./src/formats/book-formats'); }
 function searchTools() { return require('./src/search/web-search'); }
+
+function wait(milliseconds) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+function getUpdateApplyArgs() {
+  const flagIndex = process.argv.indexOf(UPDATE_APPLY_FLAG);
+  if (flagIndex < 0) return null;
+  const targetDir = path.resolve(String(process.argv[flagIndex + 1] || ''));
+  const parentPid = Number(process.argv[flagIndex + 2]);
+  if (!path.isAbsolute(targetDir) || !Number.isInteger(parentPid) || parentPid <= 0) return null;
+  return { targetDir, parentPid };
+}
+
+function isProcessRunning(pid) {
+  try { process.kill(pid, 0); return true; }
+  catch (_) { return false; }
+}
+
+// 新版从临时目录启动后，等待旧进程退出，再覆盖原目录并重新启动正式程序。
+async function applyDownloadedUpdate({ targetDir, parentPid }) {
+  const sourceDir = path.dirname(process.execPath);
+  if (path.resolve(sourceDir) === path.resolve(targetDir)) throw new Error('更新临时目录与程序目录相同');
+  for (let attempt = 0; attempt < 300 && isProcessRunning(parentPid); attempt += 1) await wait(200);
+  if (isProcessRunning(parentPid)) throw new Error('旧版本未能在 60 秒内退出');
+  fs.mkdirSync(targetDir, { recursive: true });
+  fs.cpSync(sourceDir, targetDir, { recursive: true, force: true, errorOnExist: false });
+  const installedExe = path.join(targetDir, path.basename(process.execPath));
+  const { spawn } = require('child_process');
+  spawn(installedExe, [], { cwd: targetDir, detached: true, stdio: 'ignore' }).unref();
+}
 
 // 阅读器状态持久化（记住上次打开的书籍），跨启动保存到 userData。
 function readerStateFile() {
@@ -205,6 +237,79 @@ function compareVersions(candidate, current) {
   return 0;
 }
 
+function findUpdateExecutable(rootDir) {
+  const pending = [{ dir: rootDir, depth: 0 }];
+  while (pending.length) {
+    const { dir, depth } = pending.shift();
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isFile() && entry.name === `${APP_NAME}.exe`) return fullPath;
+      if (entry.isDirectory() && depth < 2) pending.push({ dir: fullPath, depth: depth + 1 });
+    }
+  }
+  return null;
+}
+
+async function sha256File(filePath) {
+  const { createHash } = require('crypto');
+  const hash = createHash('sha256');
+  await new Promise((resolve, reject) => {
+    const input = fs.createReadStream(filePath);
+    input.on('data', (chunk) => hash.update(chunk));
+    input.on('error', reject);
+    input.on('end', resolve);
+  });
+  return hash.digest('hex');
+}
+
+async function downloadAndInstallUpdate(asset, latestVersion) {
+  if (!asset?.browser_download_url) throw new Error('此版本没有可用的应用更新包');
+  const workDir = path.join(app.getPath('temp'), `web-novel-downloader-update-${latestVersion}-${Date.now()}`);
+  const zipPath = path.join(workDir, 'update.zip');
+  const extractDir = path.join(workDir, 'extracted');
+  fs.mkdirSync(extractDir, { recursive: true });
+
+  const response = await fetch(asset.browser_download_url, {
+    headers: { Accept: 'application/octet-stream', 'User-Agent': APP_ID },
+    redirect: 'follow',
+    signal: AbortSignal.timeout(15 * 60 * 1000),
+  });
+  if (!response.ok || !response.body) throw new Error(`更新包下载失败（HTTP ${response.status}）`);
+
+  const total = Number(response.headers.get('content-length')) || Number(asset.size) || 0;
+  let received = 0;
+  const { Readable, Transform } = require('stream');
+  const { pipeline } = require('stream/promises');
+  const progress = new Transform({
+    transform(chunk, encoding, callback) {
+      received += chunk.length;
+      if (mainWindow && !mainWindow.isDestroyed() && total > 0) mainWindow.setProgressBar(Math.min(received / total, 1));
+      callback(null, chunk);
+    },
+  });
+  await pipeline(Readable.fromWeb(response.body), progress, fs.createWriteStream(zipPath));
+
+  const expectedDigest = String(asset.digest || '').match(/^sha256:([a-f0-9]{64})$/i)?.[1]?.toLowerCase();
+  if (expectedDigest) {
+    const actualDigest = await sha256File(zipPath);
+    if (actualDigest !== expectedDigest) throw new Error('更新包校验失败，文件可能不完整');
+  }
+
+  const AdmZip = require('adm-zip');
+  new AdmZip(zipPath).extractAllTo(extractDir, true);
+  const stagedExe = findUpdateExecutable(extractDir);
+  if (!stagedExe) throw new Error('更新包中未找到应用程序');
+  const stagedDir = path.dirname(stagedExe);
+  const targetDir = path.dirname(process.execPath);
+  const { spawn } = require('child_process');
+  spawn(stagedExe, [UPDATE_APPLY_FLAG, targetDir, String(process.pid)], {
+    cwd: stagedDir,
+    detached: true,
+    stdio: 'ignore',
+  }).unref();
+  app.quit();
+}
+
 async function checkForAppUpdate() {
   if (!app.isPackaged || updateCheckStarted) return;
   updateCheckStarted = true;
@@ -221,18 +326,32 @@ async function checkForAppUpdate() {
     const asset = assets.find((item) => /轻量版.*\.zip$/i.test(String(item.name || '')))
       || assets.find((item) => /portable.*\.zip$/i.test(String(item.name || '')))
       || assets.find((item) => /\.zip$/i.test(String(item.name || '')));
-    const downloadUrl = asset?.browser_download_url || release.html_url;
     const result = await dialog.showMessageBox(mainWindow, {
       type: 'info',
       title: '发现新版本',
       message: `发现全网小说下载器 ${latest}`,
-      detail: `当前版本：${app.getVersion()}\n\n下载后解压，并替换旧文件即可完成更新。`,
-      buttons: ['下载轻量版', '稍后再说'],
+      detail: `当前版本：${app.getVersion()}\n\n软件将在应用内下载安装，完成后自动重启。`,
+      buttons: ['下载并自动安装', '稍后再说'],
       defaultId: 0,
       cancelId: 1,
       noLink: true,
     });
-    if (result.response === 0 && downloadUrl) await shell.openExternal(downloadUrl);
+    if (result.response === 0) {
+      try {
+        await downloadAndInstallUpdate(asset, latest);
+      } catch (error) {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.setProgressBar(-1);
+          await dialog.showMessageBox(mainWindow, {
+            type: 'error',
+            title: '更新失败',
+            message: '未能完成应用内更新',
+            detail: error.message || String(error),
+            buttons: ['确定'],
+          });
+        }
+      }
+    }
   } catch (_) {
     // 离线或 GitHub 暂不可用时静默跳过，不能影响正常启动。
   }
@@ -659,35 +778,48 @@ function buildAppMenu() {
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }
 
-const gotSingleInstanceLock = app.requestSingleInstanceLock();
-if (!gotSingleInstanceLock) app.quit();
+const updateApplyArgs = getUpdateApplyArgs();
 
-app.on('second-instance', () => {
-  if (!mainWindow) return;
-  if (mainWindow.isMinimized()) mainWindow.restore();
-  mainWindow.show();
-  mainWindow.focus();
-});
-
-app.whenReady().then(() => {
-  if (!gotSingleInstanceLock) return;
-  app.setAppUserModelId(APP_ID);
-  loadReaderState();
-  buildAppMenu();
-  createMainWindow();
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createMainWindow();
+if (updateApplyArgs) {
+  app.whenReady().then(async () => {
+    try {
+      await applyDownloadedUpdate(updateApplyArgs);
+      app.exit(0);
+    } catch (_) {
+      app.exit(1);
+    }
   });
-});
+} else {
+  const gotSingleInstanceLock = app.requestSingleInstanceLock();
+  if (!gotSingleInstanceLock) app.quit();
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
-});
+  app.on('second-instance', () => {
+    if (!mainWindow) return;
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.show();
+    mainWindow.focus();
+  });
 
-app.on('before-quit', () => {
-  if (readerStateSaveTimer) {
-    clearTimeout(readerStateSaveTimer);
-    readerStateSaveTimer = null;
-  }
-  saveReaderState();
-});
+  app.whenReady().then(() => {
+    if (!gotSingleInstanceLock) return;
+    app.setAppUserModelId(APP_ID);
+    loadReaderState();
+    buildAppMenu();
+    createMainWindow();
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) createMainWindow();
+    });
+  });
+
+  app.on('window-all-closed', () => {
+    if (process.platform !== 'darwin') app.quit();
+  });
+
+  app.on('before-quit', () => {
+    if (readerStateSaveTimer) {
+      clearTimeout(readerStateSaveTimer);
+      readerStateSaveTimer = null;
+    }
+    saveReaderState();
+  });
+}
