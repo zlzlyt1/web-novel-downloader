@@ -2,7 +2,6 @@
 const $ = (id) => document.getElementById(id);
 
 let currentBookId = null;
-let currentBook = null; // 最近一次 fetchBook 的完整书籍对象（含 chapters，供正文源探测取首章 ID）
 let outDir = '';
 let lookupDir = ''; // 已下载书籍的查找目录，空 = 使用保存目录
 let lastSearchUrl = '';
@@ -49,13 +48,6 @@ async function init() {
   $('outDir').value = outDir;
   $('lookupDir').value = '';
   applyTheme(getTheme());
-  try {
-    const cfgRes = await window.api.getConfig();
-    if (cfgRes && cfgRes.ok && cfgRes.config) {
-      $('contentApiUrl').value = cfgRes.config.contentApiUrl || '';
-      $('contentApiToken').value = cfgRes.config.contentApiToken || '';
-    }
-  } catch (_) {}
   window.api.onLibraryUpdateProgress((progress) => {
     if (!activeUpdateButton) return;
     if (progress.stage === 'chapter') activeUpdateButton.textContent = `${progress.done || 0}/${progress.total || 0}`;
@@ -92,47 +84,6 @@ async function updateDownloadedBook(file, targetInput, button) {
     button.disabled = false;
     targetInput.disabled = false;
     button.textContent = originalText;
-  }
-}
-
-async function saveContentApi() {
-  const status = $('contentApiStatus');
-  const button = $('btnSaveContentApi');
-  button.disabled = true;
-  status.className = 'search-status';
-  status.textContent = '保存中…';
-  const res = await window.api.setConfig({
-    contentApiUrl: $('contentApiUrl').value.trim(),
-    contentApiToken: $('contentApiToken').value.trim(),
-  });
-  button.disabled = false;
-  if (res && res.ok) {
-    status.className = 'search-status success';
-    status.textContent = '已保存（下载时将自动启用）';
-  } else {
-    status.className = 'search-status error';
-    status.textContent = '保存失败：' + ((res && res.error) || '未知错误');
-  }
-}
-
-async function testContentApi() {
-  const status = $('contentApiStatus');
-  const button = $('btnTestContentApi');
-  button.disabled = true;
-  status.className = 'search-status';
-  status.textContent = '测试中…';
-  // 优先用已加载书籍的首个章节 ID 探测；否则用占位 ID 仅验证端点可达。
-  const probeItemIds = (currentBook && currentBook.chapters && currentBook.chapters.length)
-    ? [currentBook.chapters[0].itemId]
-    : [];
-  const res = await window.api.testContentApi({ probeItemIds });
-  button.disabled = false;
-  if (res && res.ok) {
-    status.className = 'search-status success';
-    status.textContent = res.message || '正文源可用';
-  } else {
-    status.className = 'search-status error';
-    status.textContent = (res && res.message) || '测试失败';
   }
 }
 
@@ -287,7 +238,6 @@ async function fetchBook() {
   $('btnFetch').textContent = '获取信息';
   if (!res.ok) return alert('获取失败：' + (res.error || '未知错误'));
   const b = res.book;
-  currentBook = b;
   currentBookId = b.bookId;
   $('bookName').textContent = b.bookName;
   $('bookAuthor').textContent = '作者：' + (b.author || '—');
@@ -360,8 +310,6 @@ function setProgress(pct, text) {
 window.addEventListener('DOMContentLoaded', () => {
   init();
   $('btnFetch').addEventListener('click', fetchBook);
-  $('btnSaveContentApi').addEventListener('click', saveContentApi);
-  $('btnTestContentApi').addEventListener('click', testContentApi);
   $('btnSearch').addEventListener('click', searchByTitle);
   $('btnDownload').addEventListener('click', startDownload);
   $('btnCancel').addEventListener('click', () => window.api.cancelCrawl());

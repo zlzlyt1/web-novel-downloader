@@ -52,26 +52,6 @@
       <p class="hint">支持番茄及可识别公开章节目录的其他网站；登录、付费、验证码或纯脚本页面无法下载。</p>
     </section>
 
-    <section class="card">
-      <div class="section-head">
-        <h3>正文源（可选）</h3>
-        <span class="source-note">接入第三方 batch_full 中转，可获取网页端不提供的付费/锁定章节正文</span>
-      </div>
-      <div class="field-row">
-        <label>正文源地址</label>
-        <input id="contentApiUrl" type="text" placeholder="https://…（batch_full 中转地址，可含完整 query）" />
-      </div>
-      <div class="field-row">
-        <label>Token</label>
-        <input id="contentApiToken" type="text" placeholder="可选；将以 ?token= 与 Authorization 头附带" />
-      </div>
-      <div class="actions">
-        <button id="btnSaveContentApi" class="btn primary">保存正文源设置</button>
-        <button id="btnTestContentApi" class="btn">测试正文源</button>
-        <span id="contentApiStatus" class="search-status"></span>
-      </div>
-    </section>
-
     <section id="bookCard" class="card hidden">
       <div class="book-head">
         <div class="book-meta">
@@ -101,7 +81,7 @@
         <span class="range-label">章，到第</span>
         <input id="endChapter" type="number" min="1" step="1" placeholder="最后一章" class="num-input" />
         <span class="range-label">章</span>
-        <span class="hint" style="margin-left:10px">留空 = 从第 1 章到最后一章；付费/锁定章节在配置正文源后优先走正文源，未命中则跳过</span>
+        <span class="hint" style="margin-left:10px">留空 = 从第 1 章到最后一章；无法公开读取的付费或锁定章节会跳过</span>
       </div>
       <div class="actions">
         <button id="btnDownload" class="btn primary" disabled>开始下载</button>

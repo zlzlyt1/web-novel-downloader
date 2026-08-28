@@ -166,32 +166,6 @@ function findStoredBookFile(outDir, sourceUrl, book) {
   return null;
 }
 
-// 用户设置（正文源等）持久化到 userData/settings.json。
-// 采用“内存热配置”：启动时惰性加载到 liveSettings，saveSettings 同时更新内存与磁盘，
-// 后续所有读取（下载、探测、getConfig）都直接取内存中的最新值，无需重启即可生效。
-let liveSettings = null;
-function settingsFile() {
-  return path.join(app.getPath('userData'), 'settings.json');
-}
-function loadSettings() {
-  try {
-    return JSON.parse(fs.readFileSync(settingsFile(), 'utf8'));
-  } catch (_) {
-    return {};
-  }
-}
-function getSettings() {
-  if (liveSettings === null) liveSettings = loadSettings();
-  return liveSettings;
-}
-function saveSettings(patch) {
-  const next = { ...getSettings(), ...(patch && typeof patch === 'object' ? patch : {}) };
-  fs.mkdirSync(path.dirname(settingsFile()), { recursive: true });
-  fs.writeFileSync(settingsFile(), JSON.stringify(next, null, 2), 'utf8');
-  liveSettings = next;
-  return next;
-}
-
 function createMainWindow() {
   mainWindow = new BrowserWindow({
     width: 720,
@@ -315,37 +289,6 @@ function attachEditableContextMenu(window) {
 
 ipcMain.handle('app:getDefaultOutDir', () => defaultOutDir());
 
-ipcMain.handle('config:get', () => ({ ok: true, config: getSettings() }));
-
-ipcMain.handle('config:set', (event, patch) => {
-  try {
-    return { ok: true, config: saveSettings(patch) };
-  } catch (e) {
-    return { ok: false, error: e.message || String(e) };
-  }
-});
-
-// 测试正文源连通性：用已加载书籍的首个章节 ID 探测；没有则用占位 ID 只验证端点可达。
-ipcMain.handle('config:testContentApi', async (event, { probeItemIds } = {}) => {
-  try {
-    const settings = getSettings();
-    const url = (settings.contentApiUrl || '').trim();
-    if (!url) return { ok: false, message: '请先填写并保存正文源地址' };
-    const { HttpClient } = require('./src/crawler/http');
-    const { probeBatchSource } = require('./src/crawler/fanqie');
-    const http = new HttpClient({ minInterval: 0, timeoutMs: 12000, maxRetries: 1 });
-    const ids = Array.isArray(probeItemIds)
-      ? probeItemIds.filter((s) => s)
-      : (probeItemIds ? [probeItemIds] : []);
-    return await probeBatchSource(
-      { base: url, token: settings.contentApiToken || '', probeItemIds: ids },
-      http
-    );
-  } catch (e) {
-    return { ok: false, message: e.message || String(e) };
-  }
-});
-
 ipcMain.handle('app:setTheme', (event, theme) => {
   applyThemeToWindows(theme);
   return true;
@@ -394,15 +337,12 @@ ipcMain.handle('search:books', async (event, query) => {
 
 ipcMain.handle('crawl:start', async (event, { url, outDir, startChapter, endChapter, maxChapters }) => {
   cancelFlag = false;
-  const settings = getSettings();
   const outputDir = outDir || defaultOutDir();
   activeDownloader = new (crawler().Downloader)({
     minInterval: 700,
     startChapter: startChapter || 1,
     endChapter: endChapter || 0,
     maxChapters: maxChapters || 0,
-    contentApiUrl: settings.contentApiUrl || '',
-    contentApiToken: settings.contentApiToken || '',
     cacheDir: path.join(app.getPath('userData'), 'cache'),
     onProgress: (p) => {
       if (event.sender && !event.sender.isDestroyed()) event.sender.send('crawl:progress', p);
@@ -626,13 +566,10 @@ ipcMain.handle('library:update', async (event, { filePath, sourceUrl, endChapter
   if (activeDownloader) return { ok: false, error: '已有下载任务正在进行，请稍后再试' };
 
   cancelFlag = false;
-  const settings = getSettings();
   activeDownloader = new (crawler().Downloader)({
     minInterval: 700,
     startChapter: existingCount + 1,
     endChapter: requestedEnd,
-    contentApiUrl: settings.contentApiUrl || '',
-    contentApiToken: settings.contentApiToken || '',
     cacheDir: path.join(app.getPath('userData'), 'cache'),
     onProgress: (progress) => {
       if (event.sender && !event.sender.isDestroyed()) event.sender.send('library:updateProgress', progress);

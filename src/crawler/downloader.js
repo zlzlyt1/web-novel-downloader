@@ -38,8 +38,6 @@ class Downloader {
    * @param {number} [opts.startChapter] 起始章节（1 起），默认 1
    * @param {number} [opts.endChapter] 结束章节（含），默认 0 = 到最后一章
    * @param {number} [opts.maxChapters] 兼容：限定抓取前 N 章（会被转换成 endChapter）
-   * @param {string} [opts.contentApiUrl] 第三方 batch_full 正文源地址（可选；配置后付费/锁定章节也走正文源拉取）
-   * @param {string} [opts.contentApiToken] 正文源 token（可选；以 ?token= 与 Authorization 头附带）
    * @param {function} [opts.onProgress] ({done, total, current, bookName, stage, message}) => void
    * @param {function} [opts.isCancelled] () => boolean
    */
@@ -50,8 +48,6 @@ class Downloader {
     this.startChapter = opts.startChapter || 1;
     this.endChapter = opts.endChapter || 0; // 0 = 到最后一章
     if (opts.maxChapters) this.endChapter = this.endChapter ? Math.min(this.endChapter, opts.maxChapters) : opts.maxChapters;
-    this.contentApiUrl = opts.contentApiUrl || '';
-    this.contentApiToken = opts.contentApiToken || '';
   }
 
   _report(partial) {
@@ -99,11 +95,6 @@ class Downloader {
 
   async _downloadMetas(book, useFanqie, metas) {
     const total = metas.length;
-
-    // 番茄 + 配置了正文源：先批量预拉取正文（含付费/锁定章节）。
-    let batchMap = {};
-    if (useFanqie && this.contentApiUrl && metas.length) batchMap = await this._fetchBatch(metas, book);
-
     const chapters = [];
     const failed = [];
 
@@ -112,15 +103,7 @@ class Downloader {
       const meta = metas[i];
       const done = i + 1;
 
-      // 1) 正文源命中（含付费/锁定章节）→ 直接采用
-      const batch = batchMap[meta.itemId];
-      if (batch && (batch.text || (Array.isArray(batch.paragraphs) && batch.paragraphs.length))) {
-        chapters.push({ ...meta, ...batch, locked: false });
-        this._report({ stage: 'chapter', done, total, current: meta.title, bookName: book.bookName, message: `已完成 ${done}/${total}：${meta.title}（正文源）` });
-        continue;
-      }
-
-      // 2) 未命中正文源且章节锁定 → 跳过
+      // 无法公开读取的章节直接跳过。
       const locked = meta.isChapterLock || meta.isPaidPublication || meta.isPaidStory || meta.needPay;
       if (locked) {
         chapters.push({ ...meta, locked: true, paragraphs: [], text: '' });
@@ -128,7 +111,7 @@ class Downloader {
         continue;
       }
 
-      // 3) 网页逐章回退
+      // 网页逐章读取。
       try {
         const ch = useFanqie
           ? await fanqie.getChapter(meta.itemId, this.http)
@@ -144,26 +127,6 @@ class Downloader {
     }
 
     return { book, chapters, failed, newChapterCount: chapters.length };
-  }
-
-  // 通过正文源批量预拉取章节正文；单批失败不中断，返回已命中的部分，未命中章节回退网页。
-  async _fetchBatch(metas, book) {
-    const ids = metas.map((chapter) => String(chapter.itemId)).filter(Boolean);
-    const total = ids.length;
-    const BATCH_SIZE = 20;
-    const map = {};
-    for (let i = 0; i < ids.length; i += BATCH_SIZE) {
-      if (this.isCancelled()) throw new Error('已取消');
-      const chunk = ids.slice(i, i + BATCH_SIZE);
-      this._report({ stage: 'chapter', done: i, total, current: book.bookName, bookName: book.bookName, message: `正文源预拉取 ${Math.min(i + chunk.length, total)}/${total} 章…` });
-      try {
-        const part = await fanqie.fetchChaptersBatch(chunk, this.http, { base: this.contentApiUrl, token: this.contentApiToken });
-        Object.assign(map, part);
-      } catch (e) {
-        this._report({ stage: 'chapter', done: i, total, current: book.bookName, bookName: book.bookName, message: `正文源批次失败（将回退网页）：${e.message}` });
-      }
-    }
-    return map;
   }
 }
 

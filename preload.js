@@ -7,11 +7,6 @@ contextBridge.exposeInMainWorld('api', {
   setTheme: (theme) => ipcRenderer.invoke('app:setTheme', theme),
   setReaderTheme: (theme) => ipcRenderer.invoke('app:setReaderTheme', theme),
 
-  // 设置
-  getConfig: () => ipcRenderer.invoke('config:get'),
-  setConfig: (patch) => ipcRenderer.invoke('config:set', patch),
-  testContentApi: (payload) => ipcRenderer.invoke('config:testContentApi', payload),
-
   // 抓取
   getBook: (url) => ipcRenderer.invoke('crawl:getBook', url),
   searchBooks: (query) => ipcRenderer.invoke('search:books', query),
