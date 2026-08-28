@@ -2,11 +2,6 @@
 const { app, BrowserWindow, ipcMain, dialog, shell, Menu, nativeTheme } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { Downloader, getBookFromUrl } = require('./src/crawler/downloader');
-const { saveTxt, safeFileName } = require('./src/crawler/txt');
-const { metadataPath, loadLibraryMeta, saveLibraryMeta, createLibraryMeta, appendTxtChapters, mergeNewChapters } = require('./src/crawler/library');
-const { searchBooks } = require('./src/search/web-search');
-const { parseEpub, renderTxt, renderMarkdown, renderEpub } = require('./src/formats/book-formats');
 
 const APP_ID = 'com.zhangluyintao.web-novel-downloader';
 const APP_NAME = '全网小说下载器';
@@ -21,6 +16,14 @@ let readerBooks = [];
 let readerProgress = {};
 let readerStateSaveTimer = null;
 let currentTheme = 'light'; // 'light' | 'dark'
+let updateCheckStarted = false;
+
+// 下载、搜索与电子书转换只会在用户触发相应操作后使用。延迟载入可缩短低配置电脑的首屏时间。
+function crawler() { return require('./src/crawler/downloader'); }
+function txtTools() { return require('./src/crawler/txt'); }
+function libraryTools() { return require('./src/crawler/library'); }
+function bookFormats() { return require('./src/formats/book-formats'); }
+function searchTools() { return require('./src/search/web-search'); }
 
 // 阅读器状态持久化（记住上次打开的书籍），跨启动保存到 userData。
 function readerStateFile() {
@@ -136,7 +139,7 @@ function isSameStoredBook(meta, sourceUrl, book) {
 }
 
 function availableTxtPath(outDir, bookName) {
-  const base = safeFileName(bookName);
+  const base = txtTools().safeFileName(bookName);
   let n = 1;
   let filePath = path.join(outDir, `${base}.txt`);
   while (fs.existsSync(filePath)) filePath = path.join(outDir, `${base} (${++n}).txt`);
@@ -144,6 +147,8 @@ function availableTxtPath(outDir, bookName) {
 }
 
 function findStoredBookFile(outDir, sourceUrl, book) {
+  const { safeFileName } = txtTools();
+  const { loadLibraryMeta } = libraryTools();
   const defaultPath = path.join(outDir, `${safeFileName(book.bookName)}.txt`);
   if (fs.existsSync(defaultPath)) {
     const meta = loadLibraryMeta(defaultPath);
@@ -208,7 +213,55 @@ function createMainWindow() {
   });
   attachEditableContextMenu(mainWindow);
   mainWindow.loadFile(path.join(__dirname, 'src', 'renderer', 'index.html'));
+  mainWindow.webContents.once('did-finish-load', () => {
+    setTimeout(() => { checkForAppUpdate(); }, 1200);
+  });
   mainWindow.on('closed', () => { mainWindow = null; });
+}
+
+function compareVersions(candidate, current) {
+  const parts = (value) => String(value || '').trim().replace(/^v/i, '').split(/[+-]/)[0]
+    .split('.').map((part) => Number.parseInt(part, 10) || 0);
+  const left = parts(candidate);
+  const right = parts(current);
+  for (let index = 0; index < Math.max(left.length, right.length); index += 1) {
+    const difference = (left[index] || 0) - (right[index] || 0);
+    if (difference) return difference;
+  }
+  return 0;
+}
+
+async function checkForAppUpdate() {
+  if (!app.isPackaged || updateCheckStarted) return;
+  updateCheckStarted = true;
+  try {
+    const response = await fetch('https://api.github.com/repos/zlzlyt1/web-novel-downloader/releases/latest', {
+      headers: { Accept: 'application/vnd.github+json', 'User-Agent': APP_ID },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!response.ok) return;
+    const release = await response.json();
+    const latest = String(release.tag_name || '').replace(/^v/i, '');
+    if (!latest || compareVersions(latest, app.getVersion()) <= 0 || !mainWindow || mainWindow.isDestroyed()) return;
+    const assets = Array.isArray(release.assets) ? release.assets : [];
+    const asset = assets.find((item) => /轻量版.*\.zip$/i.test(String(item.name || '')))
+      || assets.find((item) => /portable.*\.zip$/i.test(String(item.name || '')))
+      || assets.find((item) => /\.zip$/i.test(String(item.name || '')));
+    const downloadUrl = asset?.browser_download_url || release.html_url;
+    const result = await dialog.showMessageBox(mainWindow, {
+      type: 'info',
+      title: '发现新版本',
+      message: `发现全网小说下载器 ${latest}`,
+      detail: `当前版本：${app.getVersion()}\n\n下载后解压，并替换旧文件即可完成更新。`,
+      buttons: ['下载轻量版', '稍后再说'],
+      defaultId: 0,
+      cancelId: 1,
+      noLink: true,
+    });
+    if (result.response === 0 && downloadUrl) await shell.openExternal(downloadUrl);
+  } catch (_) {
+    // 离线或 GitHub 暂不可用时静默跳过，不能影响正常启动。
+  }
 }
 
 function createReaderWindow() {
@@ -323,7 +376,7 @@ ipcMain.handle('dialog:chooseFile', async () => {
 ipcMain.handle('crawl:getBook', async (event, url) => {
   try {
     const { HttpClient } = require('./src/crawler/http');
-    const book = await getBookFromUrl(url, new HttpClient({ cacheDir: path.join(app.getPath('userData'), 'cache') }));
+    const book = await crawler().getBookFromUrl(url, new HttpClient({ cacheDir: path.join(app.getPath('userData'), 'cache') }));
     return { ok: true, book };
   } catch (e) {
     return { ok: false, error: e.message || String(e) };
@@ -332,7 +385,7 @@ ipcMain.handle('crawl:getBook', async (event, url) => {
 
 ipcMain.handle('search:books', async (event, query) => {
   try {
-    const data = await searchBooks(query, { limit: 15 });
+    const data = await searchTools().searchBooks(query, { limit: 15 });
     return { ok: true, ...data };
   } catch (e) {
     return { ok: false, error: e.message || String(e), results: [] };
@@ -343,7 +396,7 @@ ipcMain.handle('crawl:start', async (event, { url, outDir, startChapter, endChap
   cancelFlag = false;
   const settings = getSettings();
   const outputDir = outDir || defaultOutDir();
-  activeDownloader = new Downloader({
+  activeDownloader = new (crawler().Downloader)({
     minInterval: 700,
     startChapter: startChapter || 1,
     endChapter: endChapter || 0,
@@ -359,7 +412,9 @@ ipcMain.handle('crawl:start', async (event, { url, outDir, startChapter, endChap
   try {
     // 预先读取目录，定位该书的已有 TXT。匹配时走增量下载，避免重复抓取与覆盖。
     const { HttpClient } = require('./src/crawler/http');
-    const indexedBook = await getBookFromUrl(url, new HttpClient({ cacheDir: path.join(app.getPath('userData'), 'cache') }));
+    const indexedBook = await crawler().getBookFromUrl(url, new HttpClient({ cacheDir: path.join(app.getPath('userData'), 'cache') }));
+    const { safeFileName, saveTxt } = txtTools();
+    const { appendTxtChapters, mergeNewChapters, saveLibraryMeta, createLibraryMeta } = libraryTools();
     const defaultPath = path.join(outputDir, `${safeFileName(indexedBook.bookName)}.txt`);
     const stored = findStoredBookFile(outputDir, url, indexedBook);
     if (stored) {
@@ -397,7 +452,7 @@ ipcMain.on('crawl:cancel', () => { cancelFlag = true; });
 ipcMain.handle('file:readText', async (event, filePath) => {
   try {
     if (path.extname(filePath).toLowerCase() === '.epub') {
-      return { ok: true, name: path.basename(filePath), path: filePath, format: 'epub', book: parseEpub(filePath) };
+      return { ok: true, name: path.basename(filePath), path: filePath, format: 'epub', book: bookFormats().parseEpub(filePath) };
     }
     const content = fs.readFileSync(filePath, 'utf8');
     const format = /\.markdown?$/i.test(filePath) ? 'md' : 'txt';
@@ -414,7 +469,7 @@ ipcMain.handle('reader:convertBook', async (event, { book, sourceFormat, targetF
     const extensions = { txt: 'txt', md: 'md', epub: 'epub' };
     const labels = { txt: 'TXT 文本', md: 'Markdown', epub: 'EPUB 电子书' };
     const ext = extensions[targetFormat];
-    const baseName = safeFileName(book.title || (sourcePath ? path.basename(sourcePath, path.extname(sourcePath)) : '未命名'));
+    const baseName = txtTools().safeFileName(book.title || (sourcePath ? path.basename(sourcePath, path.extname(sourcePath)) : '未命名'));
     const defaultDir = sourcePath && path.isAbsolute(sourcePath) ? path.dirname(sourcePath) : app.getPath('documents');
     const owner = BrowserWindow.fromWebContents(event.sender) || readerWindow || mainWindow;
     const result = await dialog.showSaveDialog(owner, {
@@ -426,6 +481,7 @@ ipcMain.handle('reader:convertBook', async (event, { book, sourceFormat, targetF
     if (sourcePath && path.resolve(result.filePath) === path.resolve(sourcePath)) {
       return { ok: false, error: '不能覆盖当前正在阅读的源文件，请选择其他文件名' };
     }
+    const { renderEpub, renderMarkdown, renderTxt } = bookFormats();
     const output = targetFormat === 'epub'
       ? renderEpub(book, sourceFormat)
       : targetFormat === 'md'
@@ -440,6 +496,7 @@ ipcMain.handle('reader:convertBook', async (event, { book, sourceFormat, targetF
 
 ipcMain.handle('file:listTxts', (event, dir) => {
   try {
+    const { loadLibraryMeta } = libraryTools();
     const files = fs.readdirSync(dir)
       .filter((f) => f.toLowerCase().endsWith('.txt'))
       .map((f) => {
@@ -448,7 +505,8 @@ ipcMain.handle('file:listTxts', (event, dir) => {
         return {
           name: f,
           path: filePath,
-          chapterCount: Math.max(meta?.chapters?.length || 0, countTxtChapters(filePath)),
+          // 启动书架时不能逐本读取数十万字的 TXT。新下载书籍都有元数据；旧书保留“未识别”提示。
+          chapterCount: meta?.chapters?.length || 0,
           hasUpdateSource: Boolean(meta?.sourceUrl),
         };
       })
@@ -517,7 +575,7 @@ ipcMain.handle('reader:removeBook', async (_event, filePath, action = 'shelf-onl
     } catch (e) {
       return { ok: false, error: `无法移入回收站：${e.message || String(e)}` };
     }
-    const sidecarPath = metadataPath(filePath);
+    const sidecarPath = libraryTools().metadataPath(filePath);
     if (fs.existsSync(sidecarPath)) {
       try { await shell.trashItem(sidecarPath); }
       catch (e) { metadataWarning = `；更新记录未能移入回收站：${e.message || String(e)}`; }
@@ -544,6 +602,7 @@ ipcMain.handle('library:update', async (event, { filePath, sourceUrl, endChapter
   if (!fs.existsSync(filePath)) return { ok: false, error: '书籍文件不存在或已被移动' };
   const requestedEnd = Math.floor(Number(endChapter));
   if (!Number.isFinite(requestedEnd) || requestedEnd < 1) return { ok: false, error: '请输入有效的目标章节数' };
+  const { loadLibraryMeta, createLibraryMeta, saveLibraryMeta, appendTxtChapters, mergeNewChapters } = libraryTools();
   let meta = loadLibraryMeta(filePath);
   let existingCount = Math.max(meta?.chapters?.length || 0, countTxtChapters(filePath));
   if (requestedEnd <= existingCount) {
@@ -556,7 +615,7 @@ ipcMain.handle('library:update', async (event, { filePath, sourceUrl, endChapter
   if (!meta?.sourceUrl) {
     try {
       const { HttpClient } = require('./src/crawler/http');
-      const sourceBook = await getBookFromUrl(String(sourceUrl).trim(), new HttpClient({ cacheDir: path.join(app.getPath('userData'), 'cache') }));
+      const sourceBook = await crawler().getBookFromUrl(String(sourceUrl).trim(), new HttpClient({ cacheDir: path.join(app.getPath('userData'), 'cache') }));
       if (!existingCount) return { ok: false, error: '未能从此 TXT 识别章节标题，无法安全迁移更新记录' };
       meta = createLibraryMeta(filePath, String(sourceUrl).trim(), sourceBook, sourceBook.chapters.slice(0, existingCount));
       migrated = true;
@@ -568,7 +627,7 @@ ipcMain.handle('library:update', async (event, { filePath, sourceUrl, endChapter
 
   cancelFlag = false;
   const settings = getSettings();
-  activeDownloader = new Downloader({
+  activeDownloader = new (crawler().Downloader)({
     minInterval: 700,
     startChapter: existingCount + 1,
     endChapter: requestedEnd,
