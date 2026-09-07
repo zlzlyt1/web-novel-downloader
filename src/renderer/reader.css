@@ -6,6 +6,7 @@
 
 .hidden { display: none !important; }
 
+html, body { height: 100%; overflow: hidden; }
 body { margin: 0; font-family: -apple-system, "Segoe UI", "Microsoft YaHei", "PingFang SC", serif; }
 
 /* 主题变量（由 body[data-theme] 控制） */
@@ -22,7 +23,7 @@ body[data-theme="dark"] {
   --control-border: #3a3a3c; --control-fill: #1c1c1e;
 }
 
-.reader { display: flex; flex-direction: column; height: 100vh; background: var(--bg); color: var(--text); }
+.reader { display: flex; flex-direction: column; height: 100vh; padding-top: var(--topbar-h); overflow: hidden; background: var(--bg); color: var(--text); }
 
 /* 滚动条随主题（浅色/羊皮纸/深色）自动适配 */
 .reader *::-webkit-scrollbar { width: 10px; height: 10px; }
@@ -35,10 +36,11 @@ body[data-theme="dark"] {
 .reader *::-webkit-scrollbar-corner { background: transparent; }
 
 .topbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 50;
   -webkit-app-region: drag;
-  min-height: var(--topbar-h);
+  height: var(--topbar-h);
   display: flex; align-items: center; gap: 10px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   padding: 0 150px 0 14px;
   background: var(--panel);
   border-bottom: 1px solid var(--border);
@@ -126,7 +128,7 @@ body[data-theme="dark"] {
 .format-option:disabled { opacity: .42; cursor: default; border-color: var(--border); }
 .format-option:disabled::after { content: '当前格式'; display: block; margin-top: 5px; color: var(--accent); font-size: 11px; }
 
-.content { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 20px var(--page-margin, 24px) var(--bottom-space, 36px); }
+.content { flex: 1; min-height: 0; min-width: 0; overscroll-behavior: contain; overflow-y: auto; overflow-x: hidden; padding: 20px var(--page-margin, 24px) var(--bottom-space, 36px); }
 .page-flow { width: 100%; }
 .content[data-reading-mode="paged"] {
   overflow-x: auto; overflow-y: hidden;
